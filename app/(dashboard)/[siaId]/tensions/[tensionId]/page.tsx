@@ -219,7 +219,7 @@ export default function TensionDetailPage() {
     return null
   }
 
-  const pattern = TENSION_PATTERNS.find((p) => p.id === tension.patternId)
+  const pattern = Object.values(TENSION_PATTERNS).find((p) => p.id === tension.patternId)
   const primaryDomain = DOMAINS[tension.primaryDomain as keyof typeof DOMAINS]
   const secondaryDomain = DOMAINS[tension.secondaryDomain as keyof typeof DOMAINS]
 
