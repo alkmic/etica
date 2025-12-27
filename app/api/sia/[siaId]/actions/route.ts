@@ -21,7 +21,7 @@ export async function GET(
     }
 
     // Check ownership
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,
@@ -109,7 +109,7 @@ export async function POST(
     }
 
     // Check ownership
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,

@@ -21,7 +21,7 @@ export async function GET(
     }
 
     // Check ownership
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,
@@ -35,7 +35,7 @@ export async function GET(
       )
     }
 
-    const action = await db.action.findUnique({
+    const action = await db.action.findFirst({
       where: {
         id: actionId,
         siaId,
@@ -101,7 +101,7 @@ export async function PUT(
     }
 
     // Check ownership
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,
@@ -127,7 +127,6 @@ export async function PUT(
     const action = await db.action.update({
       where: {
         id: actionId,
-        siaId,
       },
       data: updateData,
     })
@@ -166,7 +165,7 @@ export async function DELETE(
     }
 
     // Check ownership
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,
@@ -183,7 +182,6 @@ export async function DELETE(
     await db.action.delete({
       where: {
         id: actionId,
-        siaId,
       },
     })
 

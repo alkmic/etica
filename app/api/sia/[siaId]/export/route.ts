@@ -23,7 +23,7 @@ export async function GET(
     }
 
     // Get full SIA with all related data
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,

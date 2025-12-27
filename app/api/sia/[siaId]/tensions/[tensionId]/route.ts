@@ -21,7 +21,7 @@ export async function GET(
     }
 
     // Check ownership
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,
@@ -35,7 +35,7 @@ export async function GET(
       )
     }
 
-    const tension = await db.tension.findUnique({
+    const tension = await db.tension.findFirst({
       where: {
         id: tensionId,
         siaId,
@@ -100,7 +100,7 @@ export async function PUT(
     }
 
     // Check ownership
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,
@@ -120,7 +120,6 @@ export async function PUT(
     const tension = await db.tension.update({
       where: {
         id: tensionId,
-        siaId,
       },
       data: validatedData,
     })

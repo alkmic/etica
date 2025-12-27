@@ -26,7 +26,7 @@ export async function POST(
     }
 
     // Check ownership
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
         userId: session.user.id,
@@ -41,7 +41,7 @@ export async function POST(
     }
 
     // Check tension exists
-    const tension = await db.tension.findUnique({
+    const tension = await db.tension.findFirst({
       where: {
         id: tensionId,
         siaId,
