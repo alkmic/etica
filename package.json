@@ -57,6 +57,9 @@
     "next-themes": "^0.3.0",
     "tailwindcss-animate": "^1.0.7"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "devDependencies": {
     "typescript": "^5.4.0",
     "@types/node": "^20.12.0",
