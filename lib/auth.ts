@@ -1,18 +1,16 @@
-import NextAuth from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
+import { NextAuthOptions } from 'next-auth'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
-import type { NextAuthConfig } from 'next-auth'
 
-export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(db),
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(db) as NextAuthOptions['adapter'],
   session: {
     strategy: 'jwt',
   },
   pages: {
     signIn: '/login',
-    signUp: '/register',
     error: '/login',
   },
   providers: [
@@ -24,24 +22,24 @@ export const authConfig: NextAuthConfig = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email et mot de passe requis')
+          return null
         }
 
-        const email = credentials.email as string
-        const password = credentials.password as string
-
         const user = await db.user.findUnique({
-          where: { email },
+          where: { email: credentials.email },
         })
 
         if (!user || !user.password) {
-          throw new Error('Email ou mot de passe incorrect')
+          return null
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password)
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        )
 
         if (!isPasswordValid) {
-          throw new Error('Email ou mot de passe incorrect')
+          return null
         }
 
         return {
@@ -58,12 +56,12 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = user.role
+        token.role = (user as { role?: string }).role
       }
       return token
     },
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
       }
@@ -71,5 +69,3 @@ export const authConfig: NextAuthConfig = {
     },
   },
 }
-
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)

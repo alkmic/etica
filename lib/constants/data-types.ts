@@ -358,3 +358,85 @@ export const POPULATIONS = [
   { id: 'public', label: 'Grand public' },
   { id: 'other', label: 'Autre' },
 ] as const
+
+// DATA_TYPES structure for canvas components
+export const DATA_TYPES = {
+  IDENTITY: {
+    label: 'Identité',
+    types: [
+      { id: 'NAME', label: 'Nom / Prénom' },
+      { id: 'DOB', label: 'Date de naissance' },
+      { id: 'SSN', label: 'Numéro de sécurité sociale' },
+      { id: 'NATIONAL_ID', label: 'Pièce d\'identité' },
+    ],
+  },
+  CONTACT: {
+    label: 'Contact',
+    types: [
+      { id: 'EMAIL', label: 'Email' },
+      { id: 'PHONE', label: 'Téléphone' },
+      { id: 'ADDRESS', label: 'Adresse postale' },
+    ],
+  },
+  LOCATION: {
+    label: 'Localisation',
+    types: [
+      { id: 'GPS', label: 'Géolocalisation GPS' },
+      { id: 'IP_ADDRESS', label: 'Adresse IP' },
+      { id: 'TRAVEL_HISTORY', label: 'Historique des déplacements' },
+    ],
+  },
+  FINANCIAL: {
+    label: 'Finance',
+    types: [
+      { id: 'INCOME', label: 'Revenus' },
+      { id: 'BANK_ACCOUNT', label: 'Compte bancaire' },
+      { id: 'TRANSACTIONS', label: 'Transactions' },
+      { id: 'CREDIT_SCORE', label: 'Score de crédit' },
+    ],
+  },
+  HEALTH: {
+    label: 'Santé',
+    types: [
+      { id: 'MEDICAL_RECORD', label: 'Dossier médical' },
+      { id: 'DISABILITY', label: 'Handicap' },
+      { id: 'TREATMENTS', label: 'Traitements' },
+      { id: 'ALLERGIES', label: 'Allergies' },
+    ],
+  },
+  BIOMETRIC: {
+    label: 'Biométrie',
+    types: [
+      { id: 'FINGERPRINT', label: 'Empreinte digitale' },
+      { id: 'FACE', label: 'Reconnaissance faciale' },
+      { id: 'VOICE', label: 'Empreinte vocale' },
+    ],
+  },
+  BEHAVIORAL: {
+    label: 'Comportement',
+    types: [
+      { id: 'BROWSING', label: 'Navigation web' },
+      { id: 'PURCHASES', label: 'Achats' },
+      { id: 'INTERACTIONS', label: 'Interactions' },
+      { id: 'PREFERENCES', label: 'Préférences' },
+    ],
+  },
+  PROFESSIONAL: {
+    label: 'Professionnel',
+    types: [
+      { id: 'CV', label: 'CV' },
+      { id: 'EMPLOYMENT', label: 'Emploi actuel' },
+      { id: 'EDUCATION', label: 'Formation' },
+      { id: 'SKILLS', label: 'Compétences' },
+    ],
+  },
+  INFERRED: {
+    label: 'Données inférées',
+    types: [
+      { id: 'SCORE', label: 'Score calculé' },
+      { id: 'PREDICTION', label: 'Prédiction' },
+      { id: 'CATEGORY', label: 'Catégorisation' },
+      { id: 'DECISION', label: 'Décision automatique' },
+    ],
+  },
+} as const
