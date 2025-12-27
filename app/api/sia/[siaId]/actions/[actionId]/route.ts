@@ -24,7 +24,7 @@ export async function GET(
     const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        ownerId: session.user.id,
       },
     })
 
@@ -104,7 +104,7 @@ export async function PUT(
     const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        ownerId: session.user.id,
       },
     })
 
@@ -168,7 +168,7 @@ export async function DELETE(
     const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        ownerId: session.user.id,
       },
     })
 

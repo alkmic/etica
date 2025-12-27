@@ -24,7 +24,7 @@ export async function GET(
     const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        ownerId: session.user.id,
       },
     })
 
@@ -112,7 +112,7 @@ export async function POST(
     const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        ownerId: session.user.id,
       },
     })
 

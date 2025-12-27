@@ -35,7 +35,7 @@ export async function GET(
     const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        ownerId: session.user.id,
       },
       include: {
         nodes: true,
@@ -68,7 +68,7 @@ export async function GET(
         },
         versions: {
           orderBy: {
-            version: 'desc',
+            number: 'desc',
           },
           take: 5,
         },
@@ -112,7 +112,7 @@ export async function PUT(
     const existingSia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        ownerId: session.user.id,
       },
     })
 
@@ -168,7 +168,7 @@ export async function DELETE(
     const existingSia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        ownerId: session.user.id,
       },
     })
 
