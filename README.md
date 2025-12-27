@@ -67,11 +67,11 @@ npm run dev
 
 L'application est accessible sur http://localhost:3000
 
-## Compte de démonstration
+## Compte de test
 
 Après le seed de la base de données :
-- **Email** : demo@etica.fr
-- **Mot de passe** : demo123
+- **Email** : admin@test.com
+- **Mot de passe** : password123
 
 ## Scripts disponibles
 

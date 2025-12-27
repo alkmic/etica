@@ -7,14 +7,14 @@ async function main() {
   console.log('🌱 Seeding database...')
 
   // Create demo user
-  const hashedPassword = await hash('demo123', 12)
+  const hashedPassword = await hash('password123', 12)
 
   const user = await prisma.user.upsert({
-    where: { email: 'demo@etica.fr' },
+    where: { email: 'admin@test.com' },
     update: {},
     create: {
-      email: 'demo@etica.fr',
-      name: 'Utilisateur Demo',
+      email: 'admin@test.com',
+      name: 'Admin Test',
       password: hashedPassword,
     },
   })
@@ -360,9 +360,9 @@ async function main() {
   console.log('')
   console.log('🎉 Database seeded successfully!')
   console.log('')
-  console.log('📧 Demo account:')
-  console.log('   Email: demo@etica.fr')
-  console.log('   Password: demo123')
+  console.log('📧 Test account:')
+  console.log('   Email: admin@test.com')
+  console.log('   Password: password123')
 }
 
 main()
