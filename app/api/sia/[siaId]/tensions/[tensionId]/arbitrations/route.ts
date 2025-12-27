@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const createArbitrationSchema = z.object({
   decision: z.enum(['ACCEPT', 'MITIGATE', 'REJECT']),
   justification: z.string().min(10, 'La justification doit faire au moins 10 caractères'),
@@ -72,11 +74,11 @@ export async function POST(
       // Update tension status based on decision
       let newStatus = tension.status
       if (validatedData.decision === 'ACCEPT') {
-        newStatus = 'ACCEPTED'
+        newStatus = 'ARBITRATED'
       } else if (validatedData.decision === 'MITIGATE') {
-        newStatus = 'MITIGATED'
+        newStatus = 'IN_PROGRESS'
       } else if (validatedData.decision === 'REJECT') {
-        newStatus = 'RESOLVED'
+        newStatus = 'DISMISSED'
       }
 
       await tx.tension.update({

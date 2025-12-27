@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/sia/[siaId]/tensions - List all tensions for a SIA
 export async function GET(
   request: NextRequest,

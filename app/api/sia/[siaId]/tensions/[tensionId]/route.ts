@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/sia/[siaId]/tensions/[tensionId] - Get a specific tension
 export async function GET(
   request: NextRequest,

@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { DOMAINS } from '@/lib/constants/domains'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/sia/[siaId]/export - Export SIA in various formats
 export async function GET(
   request: NextRequest,
@@ -121,29 +123,26 @@ interface SiaExport {
     id: string
     type: string
     label: string
-    description: string
-    dataTypes: string[]
+    attributes: Record<string, unknown>
   }>
   edges: Array<{
     id: string
-    sourceNode: { label: string }
-    targetNode: { label: string }
-    dataTypes: string[]
-    domains: string[]
+    source: { label: string }
+    target: { label: string }
+    dataCategories: string[]
   }>
   tensions: Array<{
     id: string
-    patternId: string
+    pattern: string
     status: string
-    severity: string
-    primaryDomain: string
-    secondaryDomain: string
+    severity: number
+    impactedDomains: string[]
     description: string
-    arbitrations: Array<{
+    arbitration: {
       decision: string
       justification: string
       createdAt: Date
-    }>
+    } | null
   }>
   actions: Array<{
     id: string
@@ -175,13 +174,15 @@ function generateCsv(sia: SiaExport): string {
 
   // Tensions
   lines.push('TENSIONS ÉTHIQUES')
-  lines.push('ID,Description,Domaine primaire,Domaine secondaire,Sévérité,Statut')
+  lines.push('ID,Description,Domaines impactés,Sévérité,Statut')
   for (const tension of sia.tensions) {
+    const domains = tension.impactedDomains
+      .map(d => DOMAINS[d as keyof typeof DOMAINS]?.label || d)
+      .join(' / ')
     lines.push([
       tension.id,
       escapeCsv(tension.description),
-      DOMAINS[tension.primaryDomain as keyof typeof DOMAINS]?.label || tension.primaryDomain,
-      DOMAINS[tension.secondaryDomain as keyof typeof DOMAINS]?.label || tension.secondaryDomain,
+      escapeCsv(domains),
       tension.severity,
       tension.status,
     ].join(','))
@@ -297,8 +298,8 @@ function generatePdfHtml(sia: SiaExport): string {
       ${sia.tensions.map(t => `
         <tr>
           <td>${t.description}</td>
-          <td>${DOMAINS[t.primaryDomain as keyof typeof DOMAINS]?.label} → ${DOMAINS[t.secondaryDomain as keyof typeof DOMAINS]?.label}</td>
-          <td><span class="badge ${t.severity.toLowerCase()}">${t.severity}</span></td>
+          <td>${t.impactedDomains.map(d => DOMAINS[d as keyof typeof DOMAINS]?.label || d).join(' / ')}</td>
+          <td><span class="badge">${t.severity}</span></td>
           <td>${t.status}</td>
         </tr>
       `).join('')}

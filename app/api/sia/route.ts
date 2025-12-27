@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const createSiaSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(100),
   description: z.string().optional(),

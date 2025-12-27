@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/sia/[siaId]/actions - List all actions for a SIA
 export async function GET(
   request: NextRequest,

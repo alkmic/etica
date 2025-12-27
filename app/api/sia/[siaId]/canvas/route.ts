@@ -5,6 +5,8 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { detectTensions } from '@/lib/rules/tension-rules'
 
+export const dynamic = 'force-dynamic'
+
 const nodeSchema = z.object({
   id: z.string(),
   type: z.enum(['HUMAN', 'AI', 'INFRA', 'ORG']),

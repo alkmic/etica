@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { calculateVigilanceScores } from '@/lib/scoring/vigilance'
 
+export const dynamic = 'force-dynamic'
+
 // POST /api/sia/[siaId]/recalculate - Recalculate vigilance scores
 export async function POST(
   request: NextRequest,
