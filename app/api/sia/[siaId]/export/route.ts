@@ -32,18 +32,18 @@ export async function GET(
         nodes: true,
         edges: {
           include: {
-            sourceNode: true,
-            targetNode: true,
+            source: true,
+            target: true,
           },
         },
         tensions: {
           include: {
-            edges: {
+            tensionEdges: {
               include: {
                 edge: true,
               },
             },
-            arbitrations: true,
+            arbitration: true,
             actions: true,
           },
         },

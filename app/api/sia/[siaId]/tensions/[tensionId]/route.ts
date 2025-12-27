@@ -41,19 +41,17 @@ export async function GET(
         siaId,
       },
       include: {
-        edges: {
+        tensionEdges: {
           include: {
             edge: {
               include: {
-                sourceNode: true,
-                targetNode: true,
+                source: true,
+                target: true,
               },
             },
           },
         },
-        arbitrations: {
-          orderBy: { createdAt: 'desc' },
-        },
+        arbitration: true,
         actions: {
           orderBy: { priority: 'desc' },
         },
@@ -78,8 +76,8 @@ export async function GET(
 }
 
 const updateTensionSchema = z.object({
-  status: z.enum(['ACTIVE', 'OPEN', 'RESOLVED', 'ACCEPTED', 'MITIGATED']).optional(),
-  severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+  status: z.enum(['DETECTED', 'QUALIFIED', 'IN_PROGRESS', 'ARBITRATED', 'RESOLVED', 'DISMISSED']).optional(),
+  severity: z.number().min(1).max(5).optional(),
   description: z.string().optional(),
 })
 

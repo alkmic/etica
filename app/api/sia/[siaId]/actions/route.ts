@@ -42,8 +42,7 @@ export async function GET(
           select: {
             id: true,
             description: true,
-            primaryDomain: true,
-            secondaryDomain: true,
+            impactedDomains: true,
           },
         },
         evidences: {
@@ -133,9 +132,8 @@ export async function POST(
         description: validatedData.description || '',
         priority: validatedData.priority,
         category: validatedData.category,
-        status: 'PENDING',
+        status: 'TODO',
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        assignee: validatedData.assignee || null,
         tensionId: validatedData.tensionId || null,
       },
       include: {
@@ -143,8 +141,7 @@ export async function POST(
           select: {
             id: true,
             description: true,
-            primaryDomain: true,
-            secondaryDomain: true,
+            impactedDomains: true,
           },
         },
         evidences: true,

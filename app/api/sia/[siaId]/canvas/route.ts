@@ -7,21 +7,21 @@ import { detectTensions } from '@/lib/rules/tension-rules'
 
 const nodeSchema = z.object({
   id: z.string(),
-  type: z.enum(['SOURCE', 'TREATMENT', 'DECISION', 'ACTION', 'STAKEHOLDER', 'STORAGE']),
+  type: z.enum(['HUMAN', 'AI', 'INFRA', 'ORG']),
   label: z.string(),
-  description: z.string().optional(),
-  dataTypes: z.array(z.string()).optional(),
+  attributes: z.record(z.unknown()).optional(),
   positionX: z.number(),
   positionY: z.number(),
 })
 
 const edgeSchema = z.object({
   id: z.string(),
-  sourceNodeId: z.string(),
-  targetNodeId: z.string(),
-  dataTypes: z.array(z.string()).optional(),
-  description: z.string().optional(),
-  domains: z.array(z.string()).optional(),
+  sourceId: z.string(),
+  targetId: z.string(),
+  label: z.string().optional(),
+  direction: z.enum(['H2M', 'M2M', 'M2H', 'H2H']).default('M2M'),
+  nature: z.enum(['COLLECT', 'INFERENCE', 'ENRICHMENT', 'DECISION', 'RECOMMENDATION', 'NOTIFICATION', 'LEARNING', 'CONTROL', 'TRANSFER', 'STORAGE']).default('TRANSFER'),
+  dataCategories: z.array(z.string()).optional(),
 })
 
 const canvasSchema = z.object({
@@ -77,11 +77,9 @@ export async function PUT(
             siaId,
             type: node.type,
             label: node.label,
-            description: node.description || '',
-            dataTypes: node.dataTypes || [],
+            attributes: node.attributes || {},
             positionX: node.positionX,
             positionY: node.positionY,
-            metadata: {},
           })),
         })
       }
@@ -92,11 +90,12 @@ export async function PUT(
           data: validatedData.edges.map((edge) => ({
             id: edge.id,
             siaId,
-            sourceNodeId: edge.sourceNodeId,
-            targetNodeId: edge.targetNodeId,
-            dataTypes: edge.dataTypes || [],
-            description: edge.description || '',
-            domains: edge.domains || [],
+            sourceId: edge.sourceId,
+            targetId: edge.targetId,
+            label: edge.label || '',
+            direction: edge.direction,
+            nature: edge.nature,
+            dataCategories: edge.dataCategories || [],
           })),
         })
       }
@@ -129,15 +128,15 @@ export async function PUT(
       const nodeContexts = updatedSia.nodes.map((node) => ({
         id: node.id,
         type: node.type,
-        dataTypes: node.dataTypes,
+        attributes: node.attributes,
       }))
 
       const edgeContexts = updatedSia.edges.map((edge) => ({
         id: edge.id,
-        sourceNodeId: edge.sourceNodeId,
-        targetNodeId: edge.targetNodeId,
-        dataTypes: edge.dataTypes,
-        domains: edge.domains,
+        sourceId: edge.sourceId,
+        targetId: edge.targetId,
+        dataCategories: edge.dataCategories,
+        nature: edge.nature,
       }))
 
       // Detect new tensions
@@ -145,11 +144,11 @@ export async function PUT(
 
       // Create new tensions (don't delete existing ones that may have been manually created)
       for (const tension of detectedTensions) {
-        // Check if tension already exists for this pattern and edges
+        // Check if tension already exists for this pattern
         const existingTension = await db.tension.findFirst({
           where: {
             siaId,
-            patternId: tension.patternId,
+            pattern: tension.pattern,
           },
         })
 
@@ -157,14 +156,13 @@ export async function PUT(
           await db.tension.create({
             data: {
               siaId,
-              patternId: tension.patternId,
-              primaryDomain: tension.primaryDomain,
-              secondaryDomain: tension.secondaryDomain,
+              pattern: tension.pattern,
+              impactedDomains: tension.impactedDomains || [],
               description: tension.description,
               severity: tension.severity,
-              status: 'ACTIVE',
-              edges: {
-                create: tension.relatedEdges.map((edgeId) => ({
+              status: 'DETECTED',
+              tensionEdges: {
+                create: tension.relatedEdges.map((edgeId: string) => ({
                   edgeId,
                 })),
               },

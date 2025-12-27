@@ -76,8 +76,8 @@ export async function POST(
         edges: true,
         tensions: {
           include: {
-            edges: true,
-            arbitrations: true,
+            tensionEdges: true,
+            arbitration: true,
           },
         },
         actions: {

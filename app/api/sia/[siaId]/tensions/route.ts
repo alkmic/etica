@@ -37,19 +37,17 @@ export async function GET(
     const tensions = await db.tension.findMany({
       where: { siaId },
       include: {
-        edges: {
+        tensionEdges: {
           include: {
             edge: {
               include: {
-                sourceNode: true,
-                targetNode: true,
+                source: true,
+                target: true,
               },
             },
           },
         },
-        arbitrations: {
-          orderBy: { createdAt: 'desc' },
-        },
+        arbitration: true,
       },
       orderBy: [
         { severity: 'desc' },
