@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { NextStepPrompt } from '@/components/workflow/next-step-prompt'
 import { useToast } from '@/hooks/use-toast'
 import { ACTION_TEMPLATES } from '@/lib/constants/action-templates'
 
@@ -659,6 +660,17 @@ export default function ActionsPage() {
             })
           )}
         </div>
+
+        {/* Next Step Prompt when all actions are completed */}
+        {actions.length > 0 && progress === 100 && (
+          <NextStepPrompt
+            siaId={siaId}
+            step="export"
+            title="Plan d'action complété"
+            description="Toutes vos actions ont été réalisées. Vous pouvez maintenant exporter votre analyse complète et créer une version de référence."
+            variant="success"
+          />
+        )}
       )}
     </div>
   )

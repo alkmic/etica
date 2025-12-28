@@ -34,6 +34,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DOMAINS } from '@/lib/constants/domains'
 import { TENSION_PATTERNS } from '@/lib/constants/tension-patterns'
+import { NextStepPrompt } from '@/components/workflow/next-step-prompt'
 
 interface Tension {
   id: string
@@ -349,6 +350,17 @@ export default function TensionsPage() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Next Step Prompt when all tensions are arbitrated */}
+        {tensions.length > 0 && resolvedTensions.length === tensions.length && (
+          <NextStepPrompt
+            siaId={siaId}
+            step="actions"
+            title="Toutes les tensions ont été traitées"
+            description="Excellent ! Vous avez arbitré toutes les tensions. Il est maintenant temps de créer un plan d'action pour mettre en oeuvre les mesures correctives."
+            variant="success"
+          />
+        )}
       )}
     </div>
   )

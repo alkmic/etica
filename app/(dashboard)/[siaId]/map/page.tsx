@@ -11,6 +11,7 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useToast } from '@/hooks/use-toast'
+import { Button } from '@/components/ui/button'
 import { useCanvasStore, CanvasNode, CanvasEdge } from '@/lib/stores/canvas-store'
 import CustomNode, { NodeType } from '@/components/canvas/custom-node'
 import CustomEdge from '@/components/canvas/custom-edge'
@@ -294,11 +295,28 @@ function MapCanvas() {
       })
 
       if (response.ok) {
+        const data = await response.json()
         setDirty(false)
-        toast({
-          title: 'Sauvegardé',
-          description: 'La cartographie a été enregistrée',
-        })
+
+        // Check if new tensions were detected
+        const newTensionsCount = data.tensionsDetected || 0
+
+        if (newTensionsCount > 0) {
+          toast({
+            title: 'Sauvegardé avec succès',
+            description: `${newTensionsCount} tension(s) éthique(s) détectée(s). Analysez-les dans l'onglet Tensions.`,
+            action: (
+              <Button variant="outline" size="sm" asChild>
+                <a href={`/${siaId}/tensions`}>Voir les tensions</a>
+              </Button>
+            ),
+          })
+        } else {
+          toast({
+            title: 'Sauvegardé',
+            description: 'La cartographie a été enregistrée. Continuez à modéliser vos flux.',
+          })
+        }
       } else {
         throw new Error('Save failed')
       }

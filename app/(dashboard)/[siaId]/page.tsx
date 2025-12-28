@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -30,6 +30,7 @@ import {
   Plus,
   TrendingUp,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -37,12 +38,16 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DOMAINS } from '@/lib/constants/domains'
+import { WorkflowProgress } from '@/components/workflow/workflow-progress'
+import { NextStepPrompt, SuggestedTensionsPrompt } from '@/components/workflow/next-step-prompt'
+import { suggestTensionsFromMetadata, getMetadataRiskSummary } from '@/lib/rules/metadata-tension-rules'
 
 interface Sia {
   id: string
   name: string
   description: string
   status: string
+  domain: string
   decisionType: string
   scale: string
   dataTypes: string[]
@@ -218,10 +223,64 @@ export default function SiaDashboardPage() {
   const resolvedTensions = sia.tensions.filter(t =>
     t.status === 'RESOLVED' || t.status === 'ARBITRATED' || t.status === 'DISMISSED'
   ).length
-  const completedActions = sia.actions.filter(a => a.status === 'DONE').length
+  const arbitratedTensions = sia.tensions.filter(t =>
+    t.status === 'ARBITRATED' || t.status === 'RESOLVED' || t.status === 'DISMISSED'
+  ).length
+  const completedActions = sia.actions.filter(a => a.status === 'DONE' || a.status === 'COMPLETED').length
   const actionProgress = sia.actions.length > 0
     ? Math.round((completedActions / sia.actions.length) * 100)
     : 0
+
+  // Workflow stats for progress component
+  const workflowStats = {
+    hasNodes: sia.nodes.length > 0,
+    hasEdges: sia.edges.length > 0,
+    tensionsCount: sia.tensions.length,
+    tensionsArbitratedCount: arbitratedTensions,
+    actionsCount: sia.actions.length,
+    actionsCompletedCount: completedActions,
+  }
+
+  // Get suggested tensions from SIA metadata
+  const suggestedTensions = useMemo(() => {
+    return suggestTensionsFromMetadata({
+      id: sia.id,
+      name: sia.name,
+      description: sia.description,
+      domain: sia.domain || '',
+      decisionType: sia.decisionType,
+      hasVulnerable: sia.hasVulnerable,
+      scale: sia.scale,
+      dataTypes: sia.dataTypes || [],
+      populations: sia.populations || [],
+    })
+  }, [sia])
+
+  // Risk summary
+  const riskSummary = useMemo(() => {
+    return getMetadataRiskSummary({
+      id: sia.id,
+      name: sia.name,
+      description: sia.description,
+      domain: sia.domain || '',
+      decisionType: sia.decisionType,
+      hasVulnerable: sia.hasVulnerable,
+      scale: sia.scale,
+      dataTypes: sia.dataTypes || [],
+      populations: sia.populations || [],
+    })
+  }, [sia])
+
+  // Determine next step to suggest
+  const getNextStep = (): 'map' | 'tensions' | 'actions' | 'export' | null => {
+    if (!workflowStats.hasNodes || !workflowStats.hasEdges) return 'map'
+    if (workflowStats.tensionsCount > 0 && workflowStats.tensionsArbitratedCount < workflowStats.tensionsCount) return 'tensions'
+    if (workflowStats.actionsCount === 0 && workflowStats.tensionsCount > 0) return 'actions'
+    if (workflowStats.actionsCompletedCount < workflowStats.actionsCount) return 'actions'
+    return 'export'
+  }
+
+  const nextStep = getNextStep()
 
   return (
     <div className="space-y-6">
@@ -266,6 +325,84 @@ export default function SiaDashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Workflow Progress */}
+      <Card>
+        <CardContent className="pt-6">
+          <WorkflowProgress siaId={siaId} stats={workflowStats} />
+        </CardContent>
+      </Card>
+
+      {/* Risk Summary and Next Step */}
+      {riskSummary.factors.length > 0 && (
+        <Card className={`border-2 ${
+          riskSummary.level === 'CRITICAL' ? 'border-red-300 bg-red-50' :
+          riskSummary.level === 'HIGH' ? 'border-orange-300 bg-orange-50' :
+          riskSummary.level === 'MEDIUM' ? 'border-yellow-300 bg-yellow-50' :
+          'border-blue-300 bg-blue-50'
+        }`}>
+          <CardContent className="py-4">
+            <div className="flex items-start gap-4">
+              <div className={`p-2 rounded-lg ${
+                riskSummary.level === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                riskSummary.level === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+                riskSummary.level === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-blue-100 text-blue-700'
+              }`}>
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold">
+                    Niveau de vigilance requis: {
+                      riskSummary.level === 'CRITICAL' ? 'Critique' :
+                      riskSummary.level === 'HIGH' ? 'Élevé' :
+                      riskSummary.level === 'MEDIUM' ? 'Modéré' :
+                      'Faible'
+                    }
+                  </h3>
+                  <Badge variant={
+                    riskSummary.level === 'CRITICAL' ? 'destructive' :
+                    riskSummary.level === 'HIGH' ? 'destructive' :
+                    'secondary'
+                  }>
+                    {riskSummary.factors.length} facteur{riskSummary.factors.length > 1 ? 's' : ''} identifié{riskSummary.factors.length > 1 ? 's' : ''}
+                  </Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {riskSummary.factors.map((factor, idx) => (
+                    <span key={idx} className="text-sm px-2 py-1 bg-white/60 rounded">
+                      {factor}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Suggested Tensions from Metadata */}
+      {suggestedTensions.length > 0 && sia.tensions.length === 0 && !workflowStats.hasEdges && (
+        <SuggestedTensionsPrompt
+          siaId={siaId}
+          suggestions={suggestedTensions.map(s => ({
+            pattern: s.pattern,
+            title: s.title,
+            reason: s.reason,
+            confidence: s.confidence,
+          }))}
+        />
+      )}
+
+      {/* Next Step Prompt */}
+      {nextStep && nextStep !== 'export' && (
+        <NextStepPrompt
+          siaId={siaId}
+          step={nextStep}
+          variant={nextStep === 'tensions' && activeTensions > 0 ? 'warning' : 'default'}
+        />
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
