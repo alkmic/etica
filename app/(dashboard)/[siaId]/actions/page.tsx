@@ -660,17 +660,17 @@ export default function ActionsPage() {
             })
           )}
         </div>
+      )}
 
-        {/* Next Step Prompt when all actions are completed */}
-        {actions.length > 0 && progress === 100 && (
-          <NextStepPrompt
-            siaId={siaId}
-            step="export"
-            title="Plan d'action complété"
-            description="Toutes vos actions ont été réalisées. Vous pouvez maintenant exporter votre analyse complète et créer une version de référence."
-            variant="success"
-          />
-        )}
+      {/* Next Step Prompt when all actions are completed */}
+      {actions.length > 0 && progress === 100 && (
+        <NextStepPrompt
+          siaId={siaId}
+          step="export"
+          title="Plan d'action complété"
+          description="Toutes vos actions ont été réalisées. Vous pouvez maintenant exporter votre analyse complète et créer une version de référence."
+          variant="success"
+        />
       )}
     </div>
   )

@@ -350,17 +350,17 @@ export default function TensionsPage() {
             </div>
           </TabsContent>
         </Tabs>
+      )}
 
-        {/* Next Step Prompt when all tensions are arbitrated */}
-        {tensions.length > 0 && resolvedTensions.length === tensions.length && (
-          <NextStepPrompt
-            siaId={siaId}
-            step="actions"
-            title="Toutes les tensions ont été traitées"
-            description="Excellent ! Vous avez arbitré toutes les tensions. Il est maintenant temps de créer un plan d'action pour mettre en oeuvre les mesures correctives."
-            variant="success"
-          />
-        )}
+      {/* Next Step Prompt when all tensions are arbitrated */}
+      {tensions.length > 0 && resolvedTensions.length === tensions.length && (
+        <NextStepPrompt
+          siaId={siaId}
+          step="actions"
+          title="Toutes les tensions ont été traitées"
+          description="Excellent ! Vous avez arbitré toutes les tensions. Il est maintenant temps de créer un plan d'action pour mettre en oeuvre les mesures correctives."
+          variant="success"
+        />
       )}
     </div>
   )
