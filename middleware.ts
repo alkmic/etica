@@ -8,8 +8,21 @@ const publicRoutes = ['/', '/login', '/register']
 // Routes that start with these prefixes are public
 const publicPrefixes = ['/api/auth']
 
+// Routes that should redirect to dashboard when authenticated
+const authRedirectRoutes = ['/login', '/register']
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  })
+
+  // Redirect authenticated users away from login/register to dashboard
+  if (token && authRedirectRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
 
   // Check if it's a public route
   if (publicRoutes.includes(pathname)) {
@@ -20,12 +33,6 @@ export async function middleware(request: NextRequest) {
   if (publicPrefixes.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next()
   }
-
-  // Check for authentication
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  })
 
   // Redirect to login if not authenticated
   if (!token) {
