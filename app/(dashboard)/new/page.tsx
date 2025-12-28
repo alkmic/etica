@@ -106,7 +106,7 @@ export default function NewSiaPage() {
         throw new Error('Erreur lors de la création')
       }
 
-      const result = await response.json()
+      const sia = await response.json()
 
       toast({
         title: 'Système créé',
@@ -114,7 +114,7 @@ export default function NewSiaPage() {
         variant: 'success',
       })
 
-      router.push(`/${result.data.id}`)
+      router.push(`/${sia.id}`)
     } catch (error) {
       toast({
         title: 'Erreur',

@@ -23,10 +23,10 @@ import { useToast } from '@/hooks/use-toast'
 
 interface Version {
   id: string
-  version: number
+  number: number
   snapshot: Record<string, unknown>
   createdAt: string
-  createdBy: string
+  createdById: string
 }
 
 export default function FilesPage() {
@@ -107,7 +107,7 @@ export default function FilesPage() {
         setVersions((prev) => [newVersion, ...prev])
         toast({
           title: 'Version créée',
-          description: `Version ${newVersion.version} sauvegardée`,
+          description: `Version ${newVersion.number} sauvegardée`,
         })
       } else {
         throw new Error('Failed to create version')
@@ -133,7 +133,7 @@ export default function FilesPage() {
       if (response.ok) {
         toast({
           title: 'Version restaurée',
-          description: `La version ${version.version} a été restaurée. Rechargez la page pour voir les changements.`,
+          description: `La version ${version.number} a été restaurée. Rechargez la page pour voir les changements.`,
         })
         // Refresh the page after a short delay
         setTimeout(() => window.location.reload(), 1500)
@@ -154,7 +154,7 @@ export default function FilesPage() {
   const handleViewVersion = (version: Version) => {
     setViewingVersion(version)
     toast({
-      title: `Aperçu de la version ${version.version}`,
+      title: `Aperçu de la version ${version.number}`,
       description: 'Cette fonctionnalité est en cours de développement.',
     })
   }
@@ -328,11 +328,11 @@ export default function FilesPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="font-medium text-primary">v{version.version}</span>
+                      <span className="font-medium text-primary">v{version.number}</span>
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">Version {version.version}</span>
+                        <span className="font-medium">Version {version.number}</span>
                         {index === 0 && (
                           <Badge variant="outline" className="text-xs">
                             Actuelle
