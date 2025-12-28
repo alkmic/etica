@@ -41,27 +41,26 @@ import { ACTION_TEMPLATES } from '@/lib/constants/action-templates'
 
 interface Tension {
   id: string
-  patternId: string
+  pattern: string
   status: string
-  severity: string
-  primaryDomain: string
-  secondaryDomain: string
+  severity: number | null
+  impactedDomains: string[]
   description: string
   createdAt: string
-  arbitrations: Array<{
+  arbitration: {
     id: string
     decision: string
     justification: string
-    createdBy: string
+    createdBy?: string
     createdAt: string
-  }>
-  edges: Array<{
+  } | null
+  tensionEdges: Array<{
     edge: {
       id: string
-      description: string
-      dataTypes: string[]
-      sourceNode: { id: string; label: string; type: string }
-      targetNode: { id: string; label: string; type: string }
+      label: string | null
+      dataCategories: string[]
+      source: { id: string; label: string; type: string }
+      target: { id: string; label: string; type: string }
     }
   }>
   actions: Array<{
@@ -83,34 +82,39 @@ const domainIcons: Record<string, React.ReactNode> = {
   ACCOUNTABILITY: <ClipboardCheck className="h-5 w-5" />,
 }
 
-const severityColors: Record<string, string> = {
-  LOW: 'bg-blue-100 text-blue-800 border-blue-200',
-  MEDIUM: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  HIGH: 'bg-orange-100 text-orange-800 border-orange-200',
-  CRITICAL: 'bg-red-100 text-red-800 border-red-200',
+// Severity is 1-5 in the schema
+const severityColors: Record<number, string> = {
+  1: 'bg-blue-100 text-blue-800 border-blue-200',
+  2: 'bg-green-100 text-green-800 border-green-200',
+  3: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  4: 'bg-orange-100 text-orange-800 border-orange-200',
+  5: 'bg-red-100 text-red-800 border-red-200',
 }
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-orange-100 text-orange-800',
-  OPEN: 'bg-blue-100 text-blue-800',
+  DETECTED: 'bg-blue-100 text-blue-800',
+  QUALIFIED: 'bg-purple-100 text-purple-800',
+  IN_PROGRESS: 'bg-orange-100 text-orange-800',
+  ARBITRATED: 'bg-indigo-100 text-indigo-800',
   RESOLVED: 'bg-green-100 text-green-800',
-  ACCEPTED: 'bg-purple-100 text-purple-800',
-  MITIGATED: 'bg-teal-100 text-teal-800',
+  DISMISSED: 'bg-gray-100 text-gray-800',
 }
 
-const severityLabels: Record<string, string> = {
-  LOW: 'Basse',
-  MEDIUM: 'Moyenne',
-  HIGH: 'Haute',
-  CRITICAL: 'Critique',
+const severityLabels: Record<number, string> = {
+  1: 'Très faible',
+  2: 'Faible',
+  3: 'Moyenne',
+  4: 'Haute',
+  5: 'Critique',
 }
 
 const statusLabels: Record<string, string> = {
-  ACTIVE: 'Active',
-  OPEN: 'Ouverte',
+  DETECTED: 'Détectée',
+  QUALIFIED: 'Qualifiée',
+  IN_PROGRESS: 'En cours',
+  ARBITRATED: 'Arbitrée',
   RESOLVED: 'Résolue',
-  ACCEPTED: 'Acceptée',
-  MITIGATED: 'Atténuée',
+  DISMISSED: 'Écartée',
 }
 
 export default function TensionDetailPage() {
@@ -179,8 +183,8 @@ export default function TensionDetailPage() {
           prev
             ? {
                 ...prev,
-                arbitrations: [newArbitration, ...prev.arbitrations],
-                status: decision === 'ACCEPT' ? 'ACCEPTED' : decision === 'MITIGATE' ? 'MITIGATED' : prev.status,
+                arbitration: newArbitration,
+                status: decision === 'ACCEPT' ? 'ARBITRATED' : decision === 'MITIGATE' ? 'IN_PROGRESS' : decision === 'REJECT' ? 'DISMISSED' : prev.status,
               }
             : null
         )
@@ -219,9 +223,12 @@ export default function TensionDetailPage() {
     return null
   }
 
-  const pattern = Object.values(TENSION_PATTERNS).find((p) => p.id === tension.patternId)
-  const primaryDomain = DOMAINS[tension.primaryDomain as keyof typeof DOMAINS]
-  const secondaryDomain = DOMAINS[tension.secondaryDomain as keyof typeof DOMAINS]
+  const pattern = TENSION_PATTERNS[tension.pattern as keyof typeof TENSION_PATTERNS]
+  // impactedDomains is an array of domain IDs
+  const domains = tension.impactedDomains.map(d => DOMAINS[d as keyof typeof DOMAINS]).filter(Boolean)
+  const primaryDomain = domains[0]
+  const secondaryDomain = domains[1]
+  const severityValue = tension.severity ?? 3
 
   // Get suggested actions from pattern
   const suggestedActions = pattern?.defaultActions || []
@@ -244,18 +251,18 @@ export default function TensionDetailPage() {
           </Button>
           <div className="flex items-center gap-3 mb-2">
             <div
-              className={`p-2 rounded-lg border ${severityColors[tension.severity]}`}
+              className={`p-2 rounded-lg border ${severityColors[severityValue] || severityColors[3]}`}
             >
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">{pattern?.title || 'Tension éthique'}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge className={severityColors[tension.severity]}>
-                  {severityLabels[tension.severity]}
+                <Badge className={severityColors[severityValue] || severityColors[3]}>
+                  {severityLabels[severityValue] || 'Moyenne'}
                 </Badge>
-                <Badge className={statusColors[tension.status]}>
-                  {statusLabels[tension.status]}
+                <Badge className={statusColors[tension.status] || 'bg-gray-100 text-gray-800'}>
+                  {statusLabels[tension.status] || tension.status}
                 </Badge>
               </div>
             </div>
@@ -284,47 +291,67 @@ export default function TensionDetailPage() {
           {/* Domains in conflict */}
           <Card>
             <CardHeader>
-              <CardTitle>Domaines en conflit</CardTitle>
+              <CardTitle>Domaines concernés</CardTitle>
               <CardDescription>
                 Les droits fondamentaux mis en tension
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-6">
-                <div
-                  className="flex-1 p-4 rounded-lg border"
-                  style={{ backgroundColor: `${primaryDomain?.color}10`, borderColor: `${primaryDomain?.color}30` }}
-                >
-                  <div className="flex items-center gap-2 mb-2" style={{ color: primaryDomain?.color }}>
-                    {domainIcons[tension.primaryDomain]}
-                    <span className="font-medium">{primaryDomain?.label}</span>
+              {domains.length >= 2 ? (
+                <div className="flex items-center gap-6">
+                  <div
+                    className="flex-1 p-4 rounded-lg border"
+                    style={{ backgroundColor: `${primaryDomain?.color}10`, borderColor: `${primaryDomain?.color}30` }}
+                  >
+                    <div className="flex items-center gap-2 mb-2" style={{ color: primaryDomain?.color }}>
+                      {domainIcons[tension.impactedDomains[0]]}
+                      <span className="font-medium">{primaryDomain?.label}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {primaryDomain?.description}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {primaryDomain?.description}
-                  </p>
-                </div>
-                <div className="flex flex-col items-center">
-                  <ArrowRight className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground mt-1">vs</span>
-                </div>
-                <div
-                  className="flex-1 p-4 rounded-lg border"
-                  style={{ backgroundColor: `${secondaryDomain?.color}10`, borderColor: `${secondaryDomain?.color}30` }}
-                >
-                  <div className="flex items-center gap-2 mb-2" style={{ color: secondaryDomain?.color }}>
-                    {domainIcons[tension.secondaryDomain]}
-                    <span className="font-medium">{secondaryDomain?.label}</span>
+                  <div className="flex flex-col items-center">
+                    <ArrowRight className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground mt-1">vs</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {secondaryDomain?.description}
-                  </p>
+                  <div
+                    className="flex-1 p-4 rounded-lg border"
+                    style={{ backgroundColor: `${secondaryDomain?.color}10`, borderColor: `${secondaryDomain?.color}30` }}
+                  >
+                    <div className="flex items-center gap-2 mb-2" style={{ color: secondaryDomain?.color }}>
+                      {domainIcons[tension.impactedDomains[1]]}
+                      <span className="font-medium">{secondaryDomain?.label}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {secondaryDomain?.description}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {domains.map((domain, i) => (
+                    <div
+                      key={i}
+                      className="p-4 rounded-lg border"
+                      style={{ backgroundColor: `${domain?.color}10`, borderColor: `${domain?.color}30` }}
+                    >
+                      <div className="flex items-center gap-2 mb-2" style={{ color: domain?.color }}>
+                        {domainIcons[tension.impactedDomains[i]]}
+                        <span className="font-medium">{domain?.label}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {domain?.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Related flows */}
-          {tension.edges.length > 0 && (
+          {tension.tensionEdges.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Flux concernés</CardTitle>
@@ -334,20 +361,20 @@ export default function TensionDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {tension.edges.map(({ edge }) => (
+                  {tension.tensionEdges.map(({ edge }) => (
                     <div
                       key={edge.id}
                       className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30"
                     >
                       <div className="flex items-center gap-2 text-sm">
-                        <Badge variant="outline">{edge.sourceNode.label}</Badge>
+                        <Badge variant="outline">{edge.source.label}</Badge>
                         <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        <Badge variant="outline">{edge.targetNode.label}</Badge>
+                        <Badge variant="outline">{edge.target.label}</Badge>
                       </div>
-                      {edge.dataTypes.length > 0 && (
+                      {edge.dataCategories.length > 0 && (
                         <div className="flex-1 text-right">
                           <span className="text-xs text-muted-foreground">
-                            {edge.dataTypes.join(', ')}
+                            {edge.dataCategories.join(', ')}
                           </span>
                         </div>
                       )}
@@ -420,33 +447,29 @@ export default function TensionDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Arbitration history */}
-          {tension.arbitrations.length > 0 && (
+          {/* Arbitration record */}
+          {tension.arbitration && (
             <Card>
               <CardHeader>
-                <CardTitle>Historique des arbitrages</CardTitle>
+                <CardTitle>Arbitrage documenté</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {tension.arbitrations.map((arb) => (
-                    <div key={arb.id} className="border-l-2 pl-4 py-2">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline">
-                          {arb.decision === 'ACCEPT' && 'Accepté'}
-                          {arb.decision === 'MITIGATE' && 'Atténué'}
-                          {arb.decision === 'REJECT' && 'Rejeté'}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(arb.createdAt).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                      <p className="text-sm">{arb.justification}</p>
-                    </div>
-                  ))}
+                <div className="border-l-2 pl-4 py-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline">
+                      {tension.arbitration.decision === 'ACCEPT' && 'Accepté'}
+                      {tension.arbitration.decision === 'MITIGATE' && 'Atténué'}
+                      {tension.arbitration.decision === 'REJECT' && 'Rejeté'}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(tension.arbitration.createdAt).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm">{tension.arbitration.justification}</p>
                 </div>
               </CardContent>
             </Card>

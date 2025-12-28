@@ -37,24 +37,23 @@ import { TENSION_PATTERNS } from '@/lib/constants/tension-patterns'
 
 interface Tension {
   id: string
-  patternId: string
+  pattern: string
   status: string
-  severity: string
-  primaryDomain: string
-  secondaryDomain: string
+  severity: number | null
+  impactedDomains: string[]
   description: string
   createdAt: string
-  arbitrations: Array<{
+  arbitration: {
     id: string
     decision: string
     justification: string
     createdAt: string
-  }>
-  edges: Array<{
+  } | null
+  tensionEdges: Array<{
     edge: {
       id: string
-      sourceNode: { label: string }
-      targetNode: { label: string }
+      source: { label: string }
+      target: { label: string }
     }
   }>
 }
@@ -70,34 +69,39 @@ const domainIcons: Record<string, React.ReactNode> = {
   ACCOUNTABILITY: <ClipboardCheck className="h-4 w-4" />,
 }
 
-const severityColors: Record<string, string> = {
-  LOW: 'bg-blue-100 text-blue-800 border-blue-200',
-  MEDIUM: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  HIGH: 'bg-orange-100 text-orange-800 border-orange-200',
-  CRITICAL: 'bg-red-100 text-red-800 border-red-200',
+// Severity is 1-5 in the schema
+const severityColors: Record<number, string> = {
+  1: 'bg-blue-100 text-blue-800 border-blue-200',
+  2: 'bg-green-100 text-green-800 border-green-200',
+  3: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  4: 'bg-orange-100 text-orange-800 border-orange-200',
+  5: 'bg-red-100 text-red-800 border-red-200',
 }
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-orange-100 text-orange-800',
-  OPEN: 'bg-blue-100 text-blue-800',
+  DETECTED: 'bg-blue-100 text-blue-800',
+  QUALIFIED: 'bg-purple-100 text-purple-800',
+  IN_PROGRESS: 'bg-orange-100 text-orange-800',
+  ARBITRATED: 'bg-indigo-100 text-indigo-800',
   RESOLVED: 'bg-green-100 text-green-800',
-  ACCEPTED: 'bg-purple-100 text-purple-800',
-  MITIGATED: 'bg-teal-100 text-teal-800',
+  DISMISSED: 'bg-gray-100 text-gray-800',
 }
 
-const severityLabels: Record<string, string> = {
-  LOW: 'Basse',
-  MEDIUM: 'Moyenne',
-  HIGH: 'Haute',
-  CRITICAL: 'Critique',
+const severityLabels: Record<number, string> = {
+  1: 'Très faible',
+  2: 'Faible',
+  3: 'Moyenne',
+  4: 'Haute',
+  5: 'Critique',
 }
 
 const statusLabels: Record<string, string> = {
-  ACTIVE: 'Active',
-  OPEN: 'Ouverte',
+  DETECTED: 'Détectée',
+  QUALIFIED: 'Qualifiée',
+  IN_PROGRESS: 'En cours',
+  ARBITRATED: 'Arbitrée',
   RESOLVED: 'Résolue',
-  ACCEPTED: 'Acceptée',
-  MITIGATED: 'Atténuée',
+  DISMISSED: 'Écartée',
 }
 
 export default function TensionsPage() {
@@ -131,34 +135,35 @@ export default function TensionsPage() {
   }, [siaId])
 
   const filteredTensions = tensions.filter((tension) => {
+    const domainLabels = tension.impactedDomains
+      .map(d => DOMAINS[d as keyof typeof DOMAINS]?.label || '')
+      .join(' ')
+      .toLowerCase()
+
     const matchesSearch =
       tension.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      DOMAINS[tension.primaryDomain as keyof typeof DOMAINS]?.label
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      DOMAINS[tension.secondaryDomain as keyof typeof DOMAINS]?.label
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase())
+      domainLabels.includes(searchQuery.toLowerCase())
 
-    const matchesSeverity = severityFilter === 'all' || tension.severity === severityFilter
+    const severityNum = severityFilter === 'all' ? null : parseInt(severityFilter)
+    const matchesSeverity = severityFilter === 'all' || tension.severity === severityNum
     const matchesStatus = statusFilter === 'all' || tension.status === statusFilter
 
     return matchesSearch && matchesSeverity && matchesStatus
   })
 
   const activeTensions = filteredTensions.filter(
-    (t) => t.status === 'ACTIVE' || t.status === 'OPEN'
+    (t) => t.status === 'DETECTED' || t.status === 'QUALIFIED' || t.status === 'IN_PROGRESS'
   )
   const resolvedTensions = filteredTensions.filter(
-    (t) => t.status === 'RESOLVED' || t.status === 'ACCEPTED' || t.status === 'MITIGATED'
+    (t) => t.status === 'RESOLVED' || t.status === 'ARBITRATED' || t.status === 'DISMISSED'
   )
 
   const stats = {
     total: tensions.length,
-    active: tensions.filter((t) => t.status === 'ACTIVE' || t.status === 'OPEN').length,
-    critical: tensions.filter((t) => t.severity === 'CRITICAL').length,
+    active: tensions.filter((t) => t.status === 'DETECTED' || t.status === 'QUALIFIED' || t.status === 'IN_PROGRESS').length,
+    critical: tensions.filter((t) => t.severity === 5).length,
     resolved: tensions.filter(
-      (t) => t.status === 'RESOLVED' || t.status === 'ACCEPTED' || t.status === 'MITIGATED'
+      (t) => t.status === 'RESOLVED' || t.status === 'ARBITRATED' || t.status === 'DISMISSED'
     ).length,
   }
 
@@ -229,10 +234,11 @@ export default function TensionsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Toutes les sévérités</SelectItem>
-            <SelectItem value="CRITICAL">Critique</SelectItem>
-            <SelectItem value="HIGH">Haute</SelectItem>
-            <SelectItem value="MEDIUM">Moyenne</SelectItem>
-            <SelectItem value="LOW">Basse</SelectItem>
+            <SelectItem value="5">Critique</SelectItem>
+            <SelectItem value="4">Haute</SelectItem>
+            <SelectItem value="3">Moyenne</SelectItem>
+            <SelectItem value="2">Faible</SelectItem>
+            <SelectItem value="1">Très faible</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -241,11 +247,12 @@ export default function TensionsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="OPEN">Ouverte</SelectItem>
+            <SelectItem value="DETECTED">Détectée</SelectItem>
+            <SelectItem value="QUALIFIED">Qualifiée</SelectItem>
+            <SelectItem value="IN_PROGRESS">En cours</SelectItem>
+            <SelectItem value="ARBITRATED">Arbitrée</SelectItem>
             <SelectItem value="RESOLVED">Résolue</SelectItem>
-            <SelectItem value="ACCEPTED">Acceptée</SelectItem>
-            <SelectItem value="MITIGATED">Atténuée</SelectItem>
+            <SelectItem value="DISMISSED">Écartée</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -318,9 +325,11 @@ export default function TensionsPage() {
 }
 
 function TensionCard({ tension, siaId }: { tension: Tension; siaId: string }) {
-  const pattern = Object.values(TENSION_PATTERNS).find((p) => p.id === tension.patternId)
-  const primaryDomain = DOMAINS[tension.primaryDomain as keyof typeof DOMAINS]
-  const secondaryDomain = DOMAINS[tension.secondaryDomain as keyof typeof DOMAINS]
+  const pattern = TENSION_PATTERNS[tension.pattern as keyof typeof TENSION_PATTERNS]
+  const domains = tension.impactedDomains.map(d => DOMAINS[d as keyof typeof DOMAINS]).filter(Boolean)
+  const primaryDomain = domains[0]
+  const secondaryDomain = domains[1]
+  const severityValue = tension.severity ?? 3
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -328,18 +337,18 @@ function TensionCard({ tension, siaId }: { tension: Tension; siaId: string }) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4 flex-1">
             <div
-              className={`p-2 rounded-lg border ${severityColors[tension.severity]}`}
+              className={`p-2 rounded-lg border ${severityColors[severityValue] || severityColors[3]}`}
             >
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h3 className="font-medium">{pattern?.title || tension.description}</h3>
-                <Badge className={severityColors[tension.severity]}>
-                  {severityLabels[tension.severity]}
+                <Badge className={severityColors[severityValue] || severityColors[3]}>
+                  {severityLabels[severityValue] || 'Moyenne'}
                 </Badge>
-                <Badge className={statusColors[tension.status]}>
-                  {statusLabels[tension.status]}
+                <Badge className={statusColors[tension.status] || 'bg-gray-100 text-gray-800'}>
+                  {statusLabels[tension.status] || tension.status}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
@@ -347,29 +356,35 @@ function TensionCard({ tension, siaId }: { tension: Tension; siaId: string }) {
               </p>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <span
-                    className="flex items-center gap-1 px-2 py-1 rounded-md"
-                    style={{ backgroundColor: `${primaryDomain?.color}15` }}
-                  >
-                    <span style={{ color: primaryDomain?.color }}>
-                      {domainIcons[tension.primaryDomain]}
+                  {primaryDomain && (
+                    <span
+                      className="flex items-center gap-1 px-2 py-1 rounded-md"
+                      style={{ backgroundColor: `${primaryDomain?.color}15` }}
+                    >
+                      <span style={{ color: primaryDomain?.color }}>
+                        {domainIcons[tension.impactedDomains[0]]}
+                      </span>
+                      <span className="text-xs font-medium">{primaryDomain?.label}</span>
                     </span>
-                    <span className="text-xs font-medium">{primaryDomain?.label}</span>
-                  </span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <span
-                    className="flex items-center gap-1 px-2 py-1 rounded-md"
-                    style={{ backgroundColor: `${secondaryDomain?.color}15` }}
-                  >
-                    <span style={{ color: secondaryDomain?.color }}>
-                      {domainIcons[tension.secondaryDomain]}
-                    </span>
-                    <span className="text-xs font-medium">{secondaryDomain?.label}</span>
-                  </span>
+                  )}
+                  {secondaryDomain && (
+                    <>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      <span
+                        className="flex items-center gap-1 px-2 py-1 rounded-md"
+                        style={{ backgroundColor: `${secondaryDomain?.color}15` }}
+                      >
+                        <span style={{ color: secondaryDomain?.color }}>
+                          {domainIcons[tension.impactedDomains[1]]}
+                        </span>
+                        <span className="text-xs font-medium">{secondaryDomain?.label}</span>
+                      </span>
+                    </>
+                  )}
                 </div>
-                {tension.arbitrations.length > 0 && (
+                {tension.arbitration && (
                   <span className="text-muted-foreground">
-                    {tension.arbitrations.length} arbitrage(s)
+                    Arbitrée
                   </span>
                 )}
               </div>
