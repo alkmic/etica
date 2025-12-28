@@ -177,6 +177,38 @@ export default function SiaDashboardPage() {
     }
   }, [siaId])
 
+  // Get suggested tensions from SIA metadata - must be before early returns (hooks rule)
+  const suggestedTensions = useMemo(() => {
+    if (!sia) return []
+    return suggestTensionsFromMetadata({
+      id: sia.id,
+      name: sia.name,
+      description: sia.description,
+      domain: sia.domain || '',
+      decisionType: sia.decisionType,
+      hasVulnerable: sia.hasVulnerable,
+      scale: sia.scale,
+      dataTypes: sia.dataTypes || [],
+      populations: sia.populations || [],
+    })
+  }, [sia])
+
+  // Risk summary - must be before early returns (hooks rule)
+  const riskSummary = useMemo(() => {
+    if (!sia) return { level: 'LOW' as const, factors: [] }
+    return getMetadataRiskSummary({
+      id: sia.id,
+      name: sia.name,
+      description: sia.description,
+      domain: sia.domain || '',
+      decisionType: sia.decisionType,
+      hasVulnerable: sia.hasVulnerable,
+      scale: sia.scale,
+      dataTypes: sia.dataTypes || [],
+      populations: sia.populations || [],
+    })
+  }, [sia])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -240,36 +272,6 @@ export default function SiaDashboardPage() {
     actionsCount: sia.actions.length,
     actionsCompletedCount: completedActions,
   }
-
-  // Get suggested tensions from SIA metadata
-  const suggestedTensions = useMemo(() => {
-    return suggestTensionsFromMetadata({
-      id: sia.id,
-      name: sia.name,
-      description: sia.description,
-      domain: sia.domain || '',
-      decisionType: sia.decisionType,
-      hasVulnerable: sia.hasVulnerable,
-      scale: sia.scale,
-      dataTypes: sia.dataTypes || [],
-      populations: sia.populations || [],
-    })
-  }, [sia])
-
-  // Risk summary
-  const riskSummary = useMemo(() => {
-    return getMetadataRiskSummary({
-      id: sia.id,
-      name: sia.name,
-      description: sia.description,
-      domain: sia.domain || '',
-      decisionType: sia.decisionType,
-      hasVulnerable: sia.hasVulnerable,
-      scale: sia.scale,
-      dataTypes: sia.dataTypes || [],
-      populations: sia.populations || [],
-    })
-  }, [sia])
 
   // Determine next step to suggest
   const getNextStep = (): 'map' | 'tensions' | 'actions' | 'export' | null => {
