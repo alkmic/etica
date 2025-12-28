@@ -14,13 +14,17 @@ import {
 } from 'reactflow'
 
 export type NodeType = 'SOURCE' | 'TREATMENT' | 'DECISION' | 'ACTION' | 'STAKEHOLDER' | 'STORAGE'
+export type NodeEntityType = 'HUMAN' | 'AI' | 'INFRA' | 'ORG'
 
 export interface CanvasNode extends Node {
   data: {
     label: string
     type: NodeType
+    entityType?: NodeEntityType
     description?: string
     dataTypes?: string[]
+    inputCount?: number
+    outputCount?: number
     metadata?: Record<string, unknown>
   }
 }
@@ -29,10 +33,13 @@ export interface CanvasEdge extends Edge {
   id: string
   source: string
   target: string
+  sourceHandle?: string
+  targetHandle?: string
   data?: {
     dataTypes?: string[]
     description?: string
     domains?: string[]
+    label?: string
   }
 }
 
@@ -100,10 +107,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     const newEdge: CanvasEdge = {
       ...connection,
       id: `edge-${Date.now()}`,
+      sourceHandle: connection.sourceHandle || undefined,
+      targetHandle: connection.targetHandle || undefined,
       data: {
         dataTypes: [],
         description: '',
         domains: [],
+        label: '',
       },
     } as CanvasEdge
 

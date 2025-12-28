@@ -17,6 +17,7 @@ import CustomEdge from '@/components/canvas/custom-edge'
 import { CanvasToolbar } from '@/components/canvas/canvas-toolbar'
 import { NodeEditor } from '@/components/canvas/node-editor'
 import { EdgeEditor } from '@/components/canvas/edge-editor'
+import { FlowTemplate } from '@/lib/constants/flow-templates'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -30,7 +31,7 @@ function MapCanvas() {
   const params = useParams()
   const siaId = params.siaId as string
   const { toast } = useToast()
-  const { screenToFlowPosition } = useReactFlow()
+  const { screenToFlowPosition, fitView } = useReactFlow()
 
   const {
     nodes,
@@ -73,6 +74,9 @@ function MapCanvas() {
             label: string
             description?: string
             dataTypes?: string[]
+            entityType?: string
+            inputCount?: number
+            outputCount?: number
             positionX: number
             positionY: number
           }) => ({
@@ -82,28 +86,35 @@ function MapCanvas() {
             data: {
               label: node.label,
               type: node.type as NodeType,
+              entityType: node.entityType,
               description: node.description,
               dataTypes: node.dataTypes || [],
+              inputCount: node.inputCount || 1,
+              outputCount: node.outputCount || 1,
             },
           }))
 
           // Convert API edges to ReactFlow edges
           const flowEdges: CanvasEdge[] = (data.edges || []).map((edge: {
             id: string
-            sourceNodeId: string
-            targetNodeId: string
-            dataTypes?: string[]
+            sourceId: string
+            targetId: string
+            sourceHandle?: string
+            targetHandle?: string
+            dataCategories?: string[]
             description?: string
-            domains?: string[]
+            label?: string
           }) => ({
             id: edge.id,
-            source: edge.sourceNodeId,
-            target: edge.targetNodeId,
+            source: edge.sourceId,
+            target: edge.targetId,
+            sourceHandle: edge.sourceHandle,
+            targetHandle: edge.targetHandle,
             type: 'custom',
             data: {
-              dataTypes: edge.dataTypes || [],
+              dataTypes: edge.dataCategories || [],
               description: edge.description,
-              domains: edge.domains || [],
+              label: edge.label,
             },
           }))
 
@@ -144,12 +155,69 @@ function MapCanvas() {
           label: `Nouveau ${type.toLowerCase()}`,
           type,
           dataTypes: [],
+          inputCount: 1,
+          outputCount: 1,
         },
       }
 
       addNode(newNode)
     },
     [screenToFlowPosition, addNode]
+  )
+
+  // Handle loading a template
+  const handleLoadTemplate = useCallback(
+    (template: FlowTemplate) => {
+      // Convert template nodes to ReactFlow nodes
+      const flowNodes: CanvasNode[] = template.nodes.map((node) => ({
+        id: `${node.id}-${Date.now()}`, // Add timestamp to avoid ID collisions
+        type: 'custom',
+        position: node.position,
+        data: {
+          label: node.label,
+          type: node.type,
+          entityType: node.entityType,
+          description: node.description,
+          dataTypes: node.dataTypes,
+          inputCount: node.inputCount || 1,
+          outputCount: node.outputCount || 1,
+        },
+      }))
+
+      // Create node ID mapping (old -> new)
+      const nodeIdMap: Record<string, string> = {}
+      template.nodes.forEach((node, index) => {
+        nodeIdMap[node.id] = flowNodes[index].id
+      })
+
+      // Convert template edges to ReactFlow edges
+      const flowEdges: CanvasEdge[] = template.edges.map((edge) => ({
+        id: `${edge.id}-${Date.now()}`,
+        source: nodeIdMap[edge.source],
+        target: nodeIdMap[edge.target],
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+        type: 'custom',
+        data: {
+          dataTypes: edge.dataTypes,
+          label: edge.label,
+          domains: edge.domains,
+        },
+      }))
+
+      setNodes(flowNodes)
+      setEdges(flowEdges)
+      setDirty(true)
+
+      // Fit view after a short delay to ensure nodes are rendered
+      setTimeout(() => fitView({ padding: 0.2 }), 100)
+
+      toast({
+        title: 'Template chargé',
+        description: `Le template "${template.name}" a été chargé. N'oubliez pas de sauvegarder.`,
+      })
+    },
+    [setNodes, setEdges, setDirty, fitView, toast]
   )
 
   // Handle node click
@@ -182,9 +250,12 @@ function MapCanvas() {
       const nodesData = nodes.map((node) => ({
         id: node.id,
         type: node.data.type,
+        entityType: node.data.entityType,
         label: node.data.label,
         description: node.data.description || '',
         dataTypes: node.data.dataTypes || [],
+        inputCount: node.data.inputCount || 1,
+        outputCount: node.data.outputCount || 1,
         positionX: node.position.x,
         positionY: node.position.y,
       }))
@@ -192,10 +263,13 @@ function MapCanvas() {
       // Save edges
       const edgesData = edges.map((edge) => ({
         id: edge.id,
-        sourceNodeId: edge.source,
-        targetNodeId: edge.target,
-        dataTypes: edge.data?.dataTypes || [],
+        sourceId: edge.source,
+        targetId: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+        dataCategories: edge.data?.dataTypes || [],
         description: edge.data?.description || '',
+        label: edge.data?.label || '',
         domains: edge.data?.domains || [],
       }))
 
@@ -286,9 +360,9 @@ function MapCanvas() {
               DECISION: '#f97316',
               ACTION: '#22c55e',
               STAKEHOLDER: '#ec4899',
-              STORAGE: '#6b7280',
+              STORAGE: '#64748b',
             }
-            return colors[(node.data as { type: NodeType }).type] || '#6b7280'
+            return colors[(node.data as { type: NodeType }).type] || '#64748b'
           }}
           position="bottom-right"
           className="!bg-white !border !shadow-lg"
@@ -299,8 +373,10 @@ function MapCanvas() {
         onAddNode={handleAddNode}
         onSave={handleSave}
         onDelete={handleDelete}
+        onLoadTemplate={handleLoadTemplate}
         isSaving={isSaving}
         canDelete={!!(selectedNode || selectedEdge)}
+        hasNodes={nodes.length > 0}
       />
 
       {selectedNode && (
