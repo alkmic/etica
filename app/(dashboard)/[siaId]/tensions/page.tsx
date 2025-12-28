@@ -6,10 +6,9 @@ import Link from 'next/link'
 import {
   AlertTriangle,
   ArrowRight,
+  ArrowUpDown,
   CheckCircle2,
   Clock,
-  Filter,
-  Plus,
   Search,
   Lock,
   Scale,
@@ -19,6 +18,7 @@ import {
   MessageSquare,
   Leaf,
   ClipboardCheck,
+  Calendar,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -113,6 +113,8 @@ export default function TensionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [severityFilter, setSeverityFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'date' | 'severity'>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
     async function fetchTensions() {
@@ -134,22 +136,34 @@ export default function TensionsPage() {
     }
   }, [siaId])
 
-  const filteredTensions = tensions.filter((tension) => {
-    const domainLabels = tension.impactedDomains
-      .map(d => DOMAINS[d as keyof typeof DOMAINS]?.label || '')
-      .join(' ')
-      .toLowerCase()
+  const filteredTensions = tensions
+    .filter((tension) => {
+      const domainLabels = tension.impactedDomains
+        .map(d => DOMAINS[d as keyof typeof DOMAINS]?.label || '')
+        .join(' ')
+        .toLowerCase()
 
-    const matchesSearch =
-      tension.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      domainLabels.includes(searchQuery.toLowerCase())
+      const matchesSearch =
+        tension.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        domainLabels.includes(searchQuery.toLowerCase())
 
-    const severityNum = severityFilter === 'all' ? null : parseInt(severityFilter)
-    const matchesSeverity = severityFilter === 'all' || tension.severity === severityNum
-    const matchesStatus = statusFilter === 'all' || tension.status === statusFilter
+      const severityNum = severityFilter === 'all' ? null : parseInt(severityFilter)
+      const matchesSeverity = severityFilter === 'all' || tension.severity === severityNum
+      const matchesStatus = statusFilter === 'all' || tension.status === statusFilter
 
-    return matchesSearch && matchesSeverity && matchesStatus
-  })
+      return matchesSearch && matchesSeverity && matchesStatus
+    })
+    .sort((a, b) => {
+      if (sortBy === 'date') {
+        const dateA = new Date(a.createdAt).getTime()
+        const dateB = new Date(b.createdAt).getTime()
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+      } else {
+        const sevA = a.severity ?? 3
+        const sevB = b.severity ?? 3
+        return sortOrder === 'asc' ? sevA - sevB : sevB - sevA
+      }
+    })
 
   const activeTensions = filteredTensions.filter(
     (t) => t.status === 'DETECTED' || t.status === 'QUALIFIED' || t.status === 'IN_PROGRESS'
@@ -255,6 +269,22 @@ export default function TensionsPage() {
             <SelectItem value="DISMISSED">Écartée</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={`${sortBy}-${sortOrder}`} onValueChange={(v) => {
+          const [by, order] = v.split('-') as ['date' | 'severity', 'asc' | 'desc']
+          setSortBy(by)
+          setSortOrder(order)
+        }}>
+          <SelectTrigger className="w-[180px]">
+            <ArrowUpDown className="mr-2 h-4 w-4" />
+            <SelectValue placeholder="Trier par" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date-desc">Date (récent)</SelectItem>
+            <SelectItem value="date-asc">Date (ancien)</SelectItem>
+            <SelectItem value="severity-desc">Sévérité (critique d&apos;abord)</SelectItem>
+            <SelectItem value="severity-asc">Sévérité (faible d&apos;abord)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Tensions list */}
@@ -354,7 +384,7 @@ function TensionCard({ tension, siaId }: { tension: Tension; siaId: string }) {
               <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                 {tension.description}
               </p>
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-4 text-sm flex-wrap">
                 <div className="flex items-center gap-2">
                   {primaryDomain && (
                     <span
@@ -382,9 +412,17 @@ function TensionCard({ tension, siaId }: { tension: Tension; siaId: string }) {
                     </>
                   )}
                 </div>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(tension.createdAt).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
                 {tension.arbitration && (
                   <span className="text-muted-foreground">
-                    Arbitrée
+                    • Arbitrée
                   </span>
                 )}
               </div>

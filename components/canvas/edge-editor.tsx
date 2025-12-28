@@ -72,8 +72,8 @@ export function EdgeEditor({
   }
 
   return (
-    <div className="absolute top-4 right-4 z-10 w-80 bg-white rounded-lg shadow-lg border">
-      <div className="flex items-center justify-between p-4 border-b">
+    <div className="absolute top-4 right-4 z-10 w-96 bg-white rounded-lg shadow-xl border">
+      <div className="flex items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
         <h3 className="font-semibold">Modifier le flux</h3>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
           <X className="h-4 w-4" />
@@ -160,7 +160,7 @@ export function EdgeEditor({
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t flex items-center justify-between gap-2">
+      <div className="p-4 border-t flex items-center justify-between gap-2 bg-gray-50 rounded-b-lg">
         <Button
           variant="destructive"
           size="sm"

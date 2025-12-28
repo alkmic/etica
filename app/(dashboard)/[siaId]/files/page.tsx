@@ -11,6 +11,9 @@ import {
   Calendar,
   Clock,
   RefreshCw,
+  Eye,
+  RotateCcw,
+  History,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,6 +37,9 @@ export default function FilesPage() {
   const [versions, setVersions] = useState<Version[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState<string | null>(null)
+  const [creatingVersion, setCreatingVersion] = useState(false)
+  const [restoringVersion, setRestoringVersion] = useState<string | null>(null)
+  const [viewingVersion, setViewingVersion] = useState<Version | null>(null)
 
   useEffect(() => {
     async function fetchVersions() {
@@ -90,6 +96,7 @@ export default function FilesPage() {
   }
 
   const handleCreateVersion = async () => {
+    setCreatingVersion(true)
     try {
       const response = await fetch(`/api/sia/${siaId}/versions`, {
         method: 'POST',
@@ -102,6 +109,8 @@ export default function FilesPage() {
           title: 'Version créée',
           description: `Version ${newVersion.version} sauvegardée`,
         })
+      } else {
+        throw new Error('Failed to create version')
       }
     } catch (error) {
       toast({
@@ -109,7 +118,45 @@ export default function FilesPage() {
         description: 'Impossible de créer une version',
         variant: 'destructive',
       })
+    } finally {
+      setCreatingVersion(false)
     }
+  }
+
+  const handleRestoreVersion = async (version: Version) => {
+    setRestoringVersion(version.id)
+    try {
+      const response = await fetch(`/api/sia/${siaId}/versions/${version.id}/restore`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Version restaurée',
+          description: `La version ${version.version} a été restaurée. Rechargez la page pour voir les changements.`,
+        })
+        // Refresh the page after a short delay
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        throw new Error('Failed to restore version')
+      }
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de restaurer la version',
+        variant: 'destructive',
+      })
+    } finally {
+      setRestoringVersion(null)
+    }
+  }
+
+  const handleViewVersion = (version: Version) => {
+    setViewingVersion(version)
+    toast({
+      title: `Aperçu de la version ${version.version}`,
+      description: 'Cette fonctionnalité est en cours de développement.',
+    })
   }
 
   if (loading) {
@@ -249,9 +296,18 @@ export default function FilesPage() {
               Sauvegardez et restaurez des versions de votre analyse
             </CardDescription>
           </div>
-          <Button onClick={handleCreateVersion}>
-            <Clock className="mr-2 h-4 w-4" />
-            Créer une version
+          <Button onClick={handleCreateVersion} disabled={creatingVersion}>
+            {creatingVersion ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Création...
+              </>
+            ) : (
+              <>
+                <History className="mr-2 h-4 w-4" />
+                Créer une version
+              </>
+            )}
           </Button>
         </CardHeader>
         <CardContent>
@@ -296,12 +352,32 @@ export default function FilesPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewVersion(version)}
+                    >
+                      <Eye className="mr-1 h-3 w-3" />
                       Voir
                     </Button>
                     {index !== 0 && (
-                      <Button variant="outline" size="sm">
-                        Restaurer
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRestoreVersion(version)}
+                        disabled={restoringVersion === version.id}
+                      >
+                        {restoringVersion === version.id ? (
+                          <>
+                            <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                            Restauration...
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw className="mr-1 h-3 w-3" />
+                            Restaurer
+                          </>
+                        )}
                       </Button>
                     )}
                   </div>

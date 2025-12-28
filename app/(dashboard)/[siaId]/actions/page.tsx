@@ -10,12 +10,13 @@ import {
   AlertTriangle,
   Calendar,
   User,
-  Filter,
   Search,
   MoreVertical,
   Pencil,
   Trash2,
   ArrowUpRight,
+  ArrowUpDown,
+  AlertCircle,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -123,9 +124,12 @@ export default function ActionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'date' | 'priority' | 'dueDate'>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  // New action dialog
+  // New/Edit action dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingAction, setEditingAction] = useState<Action | null>(null)
   const [newAction, setNewAction] = useState({
     title: '',
     description: '',
@@ -156,7 +160,41 @@ export default function ActionsPage() {
     }
   }, [siaId])
 
-  const handleCreateAction = async () => {
+  const resetForm = () => {
+    setNewAction({
+      title: '',
+      description: '',
+      priority: 'MEDIUM',
+      category: 'TECHNICAL',
+      dueDate: '',
+      assignee: '',
+    })
+    setEditingAction(null)
+  }
+
+  const handleOpenDialog = (action?: Action) => {
+    if (action) {
+      setEditingAction(action)
+      setNewAction({
+        title: action.title,
+        description: action.description || '',
+        priority: action.priority,
+        category: action.category,
+        dueDate: action.dueDate ? action.dueDate.split('T')[0] : '',
+        assignee: action.assignee || '',
+      })
+    } else {
+      resetForm()
+    }
+    setIsDialogOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false)
+    resetForm()
+  }
+
+  const handleSaveAction = async () => {
     if (!newAction.title) {
       toast({
         title: 'Erreur',
@@ -168,40 +206,57 @@ export default function ActionsPage() {
 
     setSaving(true)
     try {
-      const response = await fetch(`/api/sia/${siaId}/actions`, {
-        method: 'POST',
+      const url = editingAction
+        ? `/api/sia/${siaId}/actions/${editingAction.id}`
+        : `/api/sia/${siaId}/actions`
+      const method = editingAction ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAction),
       })
 
       if (response.ok) {
         const action = await response.json()
-        setActions((prev) => [action, ...prev])
-        setNewAction({
-          title: '',
-          description: '',
-          priority: 'MEDIUM',
-          category: 'TECHNICAL',
-          dueDate: '',
-          assignee: '',
-        })
-        setIsDialogOpen(false)
-        toast({
-          title: 'Action créée',
-          description: 'L\'action a été ajoutée au plan',
-        })
+        if (editingAction) {
+          setActions((prev) =>
+            prev.map((a) => (a.id === editingAction.id ? action : a))
+          )
+          toast({
+            title: 'Action modifiée',
+            description: 'Les modifications ont été enregistrées',
+          })
+        } else {
+          setActions((prev) => [action, ...prev])
+          toast({
+            title: 'Action créée',
+            description: 'L\'action a été ajoutée au plan',
+          })
+        }
+        handleCloseDialog()
       } else {
-        throw new Error('Failed to create')
+        throw new Error('Failed to save')
       }
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer l\'action',
+        description: editingAction
+          ? 'Impossible de modifier l\'action'
+          : 'Impossible de créer l\'action',
         variant: 'destructive',
       })
     } finally {
       setSaving(false)
     }
+  }
+
+  // Check if action is overdue
+  const isOverdue = (action: Action): boolean => {
+    if (!action.dueDate || action.status === 'COMPLETED' || action.status === 'CANCELLED') {
+      return false
+    }
+    return new Date(action.dueDate) < new Date()
   }
 
   const handleToggleStatus = async (action: Action) => {
@@ -244,16 +299,40 @@ export default function ActionsPage() {
     }
   }
 
-  const filteredActions = actions.filter((action) => {
-    const matchesSearch =
-      action.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      action.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const priorityOrder: Record<string, number> = {
+    CRITICAL: 4,
+    HIGH: 3,
+    MEDIUM: 2,
+    LOW: 1,
+  }
 
-    const matchesStatus = statusFilter === 'all' || action.status === statusFilter
-    const matchesPriority = priorityFilter === 'all' || action.priority === priorityFilter
+  const filteredActions = actions
+    .filter((action) => {
+      const matchesSearch =
+        action.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        action.description?.toLowerCase().includes(searchQuery.toLowerCase())
 
-    return matchesSearch && matchesStatus && matchesPriority
-  })
+      const matchesStatus = statusFilter === 'all' || action.status === statusFilter
+      const matchesPriority = priorityFilter === 'all' || action.priority === priorityFilter
+
+      return matchesSearch && matchesStatus && matchesPriority
+    })
+    .sort((a, b) => {
+      if (sortBy === 'date') {
+        const dateA = new Date(a.createdAt).getTime()
+        const dateB = new Date(b.createdAt).getTime()
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+      } else if (sortBy === 'priority') {
+        const prioA = priorityOrder[a.priority] || 0
+        const prioB = priorityOrder[b.priority] || 0
+        return sortOrder === 'asc' ? prioA - prioB : prioB - prioA
+      } else {
+        // Sort by due date
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+      }
+    })
 
   const completedCount = actions.filter((a) => a.status === 'COMPLETED').length
   const progress = actions.length > 0 ? Math.round((completedCount / actions.length) * 100) : 0
@@ -278,18 +357,23 @@ export default function ActionsPage() {
             Gérez les mesures de mitigation et d&apos;amélioration
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          if (!open) handleCloseDialog()
+          else setIsDialogOpen(true)
+        }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => handleOpenDialog()}>
               <Plus className="mr-2 h-4 w-4" />
               Nouvelle action
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Créer une action</DialogTitle>
+              <DialogTitle>{editingAction ? 'Modifier l\'action' : 'Créer une action'}</DialogTitle>
               <DialogDescription>
-                Ajoutez une nouvelle action au plan de mitigation
+                {editingAction
+                  ? 'Modifiez les détails de l\'action'
+                  : 'Ajoutez une nouvelle action au plan de mitigation'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -371,11 +455,13 @@ export default function ActionsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button variant="outline" onClick={handleCloseDialog}>
                 Annuler
               </Button>
-              <Button onClick={handleCreateAction} disabled={saving}>
-                {saving ? 'Création...' : 'Créer l\'action'}
+              <Button onClick={handleSaveAction} disabled={saving}>
+                {saving
+                  ? (editingAction ? 'Enregistrement...' : 'Création...')
+                  : (editingAction ? 'Enregistrer' : 'Créer l\'action')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -430,6 +516,24 @@ export default function ActionsPage() {
             <SelectItem value="LOW">Basse</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={`${sortBy}-${sortOrder}`} onValueChange={(v) => {
+          const [by, order] = v.split('-') as ['date' | 'priority' | 'dueDate', 'asc' | 'desc']
+          setSortBy(by)
+          setSortOrder(order)
+        }}>
+          <SelectTrigger className="w-[180px]">
+            <ArrowUpDown className="mr-2 h-4 w-4" />
+            <SelectValue placeholder="Trier par" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date-desc">Date (récent)</SelectItem>
+            <SelectItem value="date-asc">Date (ancien)</SelectItem>
+            <SelectItem value="priority-desc">Priorité (critique d&apos;abord)</SelectItem>
+            <SelectItem value="priority-asc">Priorité (basse d&apos;abord)</SelectItem>
+            <SelectItem value="dueDate-asc">Échéance (proche d&apos;abord)</SelectItem>
+            <SelectItem value="dueDate-desc">Échéance (lointaine d&apos;abord)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Actions list */}
@@ -443,7 +547,7 @@ export default function ActionsPage() {
                 Créez des actions pour documenter les mesures prises pour atténuer les tensions
                 éthiques détectées.
               </p>
-              <Button onClick={() => setIsDialogOpen(true)}>
+              <Button onClick={() => handleOpenDialog()}>
                 <Plus className="mr-2 h-4 w-4" />
                 Créer une action
               </Button>
@@ -459,86 +563,100 @@ export default function ActionsPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredActions.map((action) => (
-              <Card key={action.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="py-4">
-                  <div className="flex items-start gap-4">
-                    <Checkbox
-                      checked={action.status === 'COMPLETED'}
-                      onCheckedChange={() => handleToggleStatus(action)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3
-                          className={`font-medium ${
-                            action.status === 'COMPLETED' ? 'line-through text-muted-foreground' : ''
-                          }`}
-                        >
-                          {action.title}
-                        </h3>
-                        <Badge className={priorityColors[action.priority]}>
-                          {priorityLabels[action.priority]}
-                        </Badge>
-                        <Badge className={statusColors[action.status]}>
-                          {statusLabels[action.status]}
-                        </Badge>
-                        <Badge variant="outline">{categoryLabels[action.category]}</Badge>
-                      </div>
-                      {action.description && (
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                          {action.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        {action.dueDate && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(action.dueDate).toLocaleDateString('fr-FR')}
-                          </span>
-                        )}
-                        {action.assignee && (
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {action.assignee}
-                          </span>
-                        )}
-                        {action.tension && (
-                          <Link
-                            href={`/${siaId}/tensions/${action.tension.id}`}
-                            className="flex items-center gap-1 text-primary hover:underline"
+            filteredActions.map((action) => {
+              const overdue = isOverdue(action)
+              return (
+                <Card
+                  key={action.id}
+                  className={`hover:shadow-md transition-shadow ${
+                    overdue ? 'border-red-300 bg-red-50/30' : ''
+                  }`}
+                >
+                  <CardContent className="py-4">
+                    <div className="flex items-start gap-4">
+                      <Checkbox
+                        checked={action.status === 'COMPLETED'}
+                        onCheckedChange={() => handleToggleStatus(action)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3
+                            className={`font-medium ${
+                              action.status === 'COMPLETED' ? 'line-through text-muted-foreground' : ''
+                            }`}
                           >
-                            <AlertTriangle className="h-3 w-3" />
-                            Tension liée
-                            <ArrowUpRight className="h-3 w-3" />
-                          </Link>
+                            {action.title}
+                          </h3>
+                          <Badge className={priorityColors[action.priority]}>
+                            {priorityLabels[action.priority]}
+                          </Badge>
+                          <Badge className={statusColors[action.status]}>
+                            {statusLabels[action.status]}
+                          </Badge>
+                          <Badge variant="outline">{categoryLabels[action.category]}</Badge>
+                          {overdue && (
+                            <Badge variant="destructive" className="gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              En retard
+                            </Badge>
+                          )}
+                        </div>
+                        {action.description && (
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                            {action.description}
+                          </p>
                         )}
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          {action.dueDate && (
+                            <span className={`flex items-center gap-1 ${overdue ? 'text-red-600 font-medium' : ''}`}>
+                              <Calendar className={`h-3 w-3 ${overdue ? 'text-red-600' : ''}`} />
+                              {new Date(action.dueDate).toLocaleDateString('fr-FR')}
+                            </span>
+                          )}
+                          {action.assignee && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {action.assignee}
+                            </span>
+                          )}
+                          {action.tension && (
+                            <Link
+                              href={`/${siaId}/tensions/${action.tension.id}`}
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              Tension liée
+                              <ArrowUpRight className="h-3 w-3" />
+                            </Link>
+                          )}
+                        </div>
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenDialog(action)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDeleteAction(action.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => handleDeleteAction(action.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              )
+            })
           )}
         </div>
       )}

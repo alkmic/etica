@@ -97,11 +97,21 @@ const domainIcons: Record<string, React.ReactNode> = {
   ACCOUNTABILITY: <ClipboardCheck className="h-4 w-4" />,
 }
 
-const severityColors: Record<string, string> = {
-  LOW: 'bg-blue-100 text-blue-800',
-  MEDIUM: 'bg-yellow-100 text-yellow-800',
-  HIGH: 'bg-orange-100 text-orange-800',
-  CRITICAL: 'bg-red-100 text-red-800',
+// Severity is now 1-5 in schema
+const severityColors: Record<number, string> = {
+  1: 'bg-blue-100 text-blue-800',
+  2: 'bg-green-100 text-green-800',
+  3: 'bg-yellow-100 text-yellow-800',
+  4: 'bg-orange-100 text-orange-800',
+  5: 'bg-red-100 text-red-800',
+}
+
+const severityLabels: Record<number, string> = {
+  1: 'Très faible',
+  2: 'Faible',
+  3: 'Moyenne',
+  4: 'Haute',
+  5: 'Critique',
 }
 
 const statusColors: Record<string, string> = {
@@ -116,6 +126,15 @@ const priorityLabels: Record<string, string> = {
   MEDIUM: 'Moyenne',
   HIGH: 'Haute',
   CRITICAL: 'Critique',
+}
+
+// Helper to get severity level for display
+const getSeverityLevel = (severity: number): number => {
+  if (severity >= 5) return 5
+  if (severity >= 4) return 4
+  if (severity >= 3) return 3
+  if (severity >= 2) return 2
+  return 1
 }
 
 export default function SiaDashboardPage() {
@@ -219,6 +238,18 @@ export default function SiaDashboardPage() {
             </Badge>
           </div>
           <p className="text-muted-foreground max-w-2xl">{sia.description}</p>
+          {sia.updatedAt && (
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Dernière mise à jour: {new Date(sia.updatedAt).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -364,10 +395,14 @@ export default function SiaDashboardPage() {
               {Object.entries(DOMAINS).map(([key, domain]) => {
                 const score = sia.vigilanceScores?.domains?.[key] || 0
                 const percentage = (score / 5) * 100
+                const tensionsForDomain = sia.tensions.filter(t =>
+                  t.impactedDomains.includes(key)
+                ).length
                 return (
-                  <div
+                  <Link
                     key={key}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    href={`/${siaId}/tensions?domain=${key}`}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
                   >
                     <div
                       className="h-8 w-8 rounded-lg flex items-center justify-center"
@@ -379,12 +414,19 @@ export default function SiaDashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium truncate">
+                        <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                           {domain.label}
                         </span>
-                        <span className="text-sm text-muted-foreground">
-                          {score.toFixed(1)}/5
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {tensionsForDomain > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {tensionsForDomain} tension{tensionsForDomain > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {score.toFixed(1)}/5
+                          </span>
+                        </div>
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
@@ -396,7 +438,8 @@ export default function SiaDashboardPage() {
                         />
                       </div>
                     </div>
-                  </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
                 )
               })}
             </div>
@@ -439,9 +482,7 @@ export default function SiaDashboardPage() {
           ) : (
             <div className="space-y-3">
               {sia.tensions.slice(0, 5).map((tension) => {
-                const severityLevel = tension.severity >= 5 ? 'CRITICAL' :
-                  tension.severity >= 4 ? 'HIGH' :
-                  tension.severity >= 3 ? 'MEDIUM' : 'LOW'
+                const severityLevel = getSeverityLevel(tension.severity || 3)
                 return (
                   <Card key={tension.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="py-4">
@@ -450,18 +491,19 @@ export default function SiaDashboardPage() {
                           <div className="mt-0.5">
                             <AlertTriangle
                               className={`h-5 w-5 ${
-                                tension.severity >= 5 ? 'text-red-500' :
-                                tension.severity >= 4 ? 'text-orange-500' :
-                                tension.severity >= 3 ? 'text-yellow-500' :
+                                severityLevel >= 5 ? 'text-red-500' :
+                                severityLevel >= 4 ? 'text-orange-500' :
+                                severityLevel >= 3 ? 'text-yellow-500' :
+                                severityLevel >= 2 ? 'text-green-500' :
                                 'text-blue-500'
                               }`}
                             />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <h4 className="font-medium">{tension.description}</h4>
                               <Badge className={severityColors[severityLevel]}>
-                                {priorityLabels[severityLevel]}
+                                {severityLabels[severityLevel]}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
