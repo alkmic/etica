@@ -59,23 +59,22 @@ interface Sia {
   }>
   edges: Array<{
     id: string
-    sourceNode: { label: string }
-    targetNode: { label: string }
-    dataTypes: string[]
+    source: { label: string }
+    target: { label: string }
+    dataCategories: string[]
   }>
   tensions: Array<{
     id: string
-    patternId: string
+    pattern: string
     status: string
-    severity: string
-    primaryDomain: string
-    secondaryDomain: string
+    severity: number
+    impactedDomains: string[]
     description: string
-    arbitrations: Array<{
+    arbitration: {
       id: string
       decision: string
       justification: string
-    }>
+    } | null
   }>
   actions: Array<{
     id: string
@@ -176,7 +175,7 @@ export default function SiaDashboardPage() {
               <p className="text-muted-foreground">
                 Le SIA demandé n&apos;existe pas ou vous n&apos;y avez pas accès.
               </p>
-              <Button onClick={() => router.push('/')}>
+              <Button onClick={() => router.push('/dashboard')}>
                 Retour au tableau de bord
               </Button>
             </div>
@@ -194,9 +193,13 @@ export default function SiaDashboardPage() {
   }))
 
   // Calculate stats
-  const activeTensions = sia.tensions.filter(t => t.status === 'ACTIVE' || t.status === 'OPEN').length
-  const resolvedTensions = sia.tensions.filter(t => t.status === 'RESOLVED' || t.status === 'ACCEPTED').length
-  const completedActions = sia.actions.filter(a => a.status === 'COMPLETED').length
+  const activeTensions = sia.tensions.filter(t =>
+    t.status === 'DETECTED' || t.status === 'QUALIFIED' || t.status === 'IN_PROGRESS'
+  ).length
+  const resolvedTensions = sia.tensions.filter(t =>
+    t.status === 'RESOLVED' || t.status === 'ARBITRATED' || t.status === 'DISMISSED'
+  ).length
+  const completedActions = sia.actions.filter(a => a.status === 'DONE').length
   const actionProgress = sia.actions.length > 0
     ? Math.round((completedActions / sia.actions.length) * 100)
     : 0
@@ -435,51 +438,54 @@ export default function SiaDashboardPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {sia.tensions.slice(0, 5).map((tension) => (
-                <Card key={tension.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="py-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          <AlertTriangle
-                            className={`h-5 w-5 ${
-                              tension.severity === 'CRITICAL' ? 'text-red-500' :
-                              tension.severity === 'HIGH' ? 'text-orange-500' :
-                              tension.severity === 'MEDIUM' ? 'text-yellow-500' :
-                              'text-blue-500'
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{tension.description}</h4>
-                            <Badge className={severityColors[tension.severity]}>
-                              {priorityLabels[tension.severity]}
-                            </Badge>
+              {sia.tensions.slice(0, 5).map((tension) => {
+                const severityLevel = tension.severity >= 5 ? 'CRITICAL' :
+                  tension.severity >= 4 ? 'HIGH' :
+                  tension.severity >= 3 ? 'MEDIUM' : 'LOW'
+                return (
+                  <Card key={tension.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5">
+                            <AlertTriangle
+                              className={`h-5 w-5 ${
+                                tension.severity >= 5 ? 'text-red-500' :
+                                tension.severity >= 4 ? 'text-orange-500' :
+                                tension.severity >= 3 ? 'text-yellow-500' :
+                                'text-blue-500'
+                              }`}
+                            />
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              {domainIcons[tension.primaryDomain]}
-                              {DOMAINS[tension.primaryDomain as keyof typeof DOMAINS]?.label}
-                            </span>
-                            <ArrowRight className="h-3 w-3" />
-                            <span className="flex items-center gap-1">
-                              {domainIcons[tension.secondaryDomain]}
-                              {DOMAINS[tension.secondaryDomain as keyof typeof DOMAINS]?.label}
-                            </span>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium">{tension.description}</h4>
+                              <Badge className={severityColors[severityLevel]}>
+                                {priorityLabels[severityLevel]}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              {tension.impactedDomains.map((domain, idx) => (
+                                <span key={domain} className="flex items-center gap-1">
+                                  {idx > 0 && <ArrowRight className="h-3 w-3" />}
+                                  {domainIcons[domain]}
+                                  {DOMAINS[domain as keyof typeof DOMAINS]?.label}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/${siaId}/tensions/${tension.id}`}>
+                            Détails
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/${siaId}/tensions/${tension.id}`}>
-                          Détails
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                )
+              })}
               {sia.tensions.length > 5 && (
                 <div className="text-center pt-2">
                   <Button variant="outline" asChild>
@@ -519,7 +525,7 @@ export default function SiaDashboardPage() {
                   <CardContent className="py-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {action.status === 'COMPLETED' ? (
+                        {action.status === 'DONE' ? (
                           <CheckCircle2 className="h-5 w-5 text-green-500" />
                         ) : action.status === 'IN_PROGRESS' ? (
                           <Clock className="h-5 w-5 text-blue-500" />

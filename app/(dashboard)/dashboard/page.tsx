@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Plus,
@@ -9,6 +12,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,57 +22,46 @@ import { Progress } from '@/components/ui/progress'
 import { getVigilanceLabel } from '@/lib/utils'
 import { SIA_DOMAINS, SIA_STATUSES } from '@/lib/constants'
 
-// Mock data for demonstration
-const mockSias = [
-  {
-    id: 'sia-1',
-    name: 'Système de tri de candidatures',
-    domain: 'HR',
-    status: 'ACTIVE',
-    description: 'Analyse automatique des CV et pré-sélection des candidats',
-    vigilanceLevel: 3,
-    tensionCount: 3,
-    openTensionCount: 2,
-    actionCount: 8,
-    completedActionCount: 5,
-    updatedAt: new Date('2025-01-15'),
-  },
-  {
-    id: 'sia-2',
-    name: 'Chatbot service client',
-    domain: 'COMMERCE',
-    status: 'ACTIVE',
-    description: 'Assistant conversationnel pour le support client',
-    vigilanceLevel: 2,
-    tensionCount: 2,
-    openTensionCount: 1,
-    actionCount: 4,
-    completedActionCount: 3,
-    updatedAt: new Date('2025-01-10'),
-  },
-  {
-    id: 'sia-3',
-    name: 'Scoring crédit',
-    domain: 'FINANCE',
-    status: 'REVIEW',
-    description: 'Évaluation automatique de la solvabilité des demandeurs',
-    vigilanceLevel: 4,
-    tensionCount: 5,
-    openTensionCount: 4,
-    actionCount: 12,
-    completedActionCount: 4,
-    updatedAt: new Date('2025-01-08'),
-  },
-]
+interface Sia {
+  id: string
+  name: string
+  domain: string
+  status: string
+  description: string
+  vigilanceScores: {
+    global: number
+    domains: Record<string, number>
+  } | null
+  _count: {
+    tensions: number
+    actions: number
+  }
+  tensions: Array<{ status: string }>
+  actions: Array<{ status: string }>
+}
 
-function SiaCard({ sia }: { sia: typeof mockSias[0] }) {
+function SiaCard({ sia }: { sia: Sia }) {
   const domain = SIA_DOMAINS[sia.domain as keyof typeof SIA_DOMAINS]
   const status = SIA_STATUSES[sia.status as keyof typeof SIA_STATUSES]
-  const coverage = sia.actionCount > 0
-    ? Math.round((sia.completedActionCount / sia.actionCount) * 100)
+
+  const vigilanceLevel = sia.vigilanceScores?.global
+    ? Math.round(sia.vigilanceScores.global)
+    : 0
+
+  const tensionCount = sia._count?.tensions || sia.tensions?.length || 0
+  const openTensionCount = sia.tensions?.filter(t =>
+    t.status === 'DETECTED' || t.status === 'QUALIFIED' || t.status === 'IN_PROGRESS'
+  ).length || 0
+
+  const actionCount = sia._count?.actions || sia.actions?.length || 0
+  const completedActionCount = sia.actions?.filter(a => a.status === 'DONE').length || 0
+
+  const coverage = actionCount > 0
+    ? Math.round((completedActionCount / actionCount) * 100)
     : 0
 
   const vigilanceColors: Record<number, string> = {
+    0: 'bg-gray-300',
     1: 'bg-green-500',
     2: 'bg-lime-500',
     3: 'bg-yellow-500',
@@ -77,7 +70,7 @@ function SiaCard({ sia }: { sia: typeof mockSias[0] }) {
   }
 
   return (
-    <Card hover className="group">
+    <Card className="group hover:shadow-lg transition-shadow">
       <Link href={`/${sia.id}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
@@ -116,15 +109,15 @@ function SiaCard({ sia }: { sia: typeof mockSias[0] }) {
                 <div
                   key={level}
                   className={`h-2 w-6 rounded-full ${
-                    level <= sia.vigilanceLevel
-                      ? vigilanceColors[sia.vigilanceLevel]
+                    level <= vigilanceLevel
+                      ? vigilanceColors[vigilanceLevel] || vigilanceColors[0]
                       : 'bg-muted'
                   }`}
                 />
               ))}
             </div>
             <span className="text-sm font-medium">
-              {getVigilanceLabel(sia.vigilanceLevel)}
+              {getVigilanceLabel(vigilanceLevel)}
             </span>
           </div>
 
@@ -133,7 +126,7 @@ function SiaCard({ sia }: { sia: typeof mockSias[0] }) {
             <div className="flex items-center gap-1.5">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               <span>
-                {sia.openTensionCount}/{sia.tensionCount} tensions
+                {openTensionCount}/{tensionCount} tensions
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -151,14 +144,64 @@ function SiaCard({ sia }: { sia: typeof mockSias[0] }) {
 }
 
 export default function DashboardPage() {
+  const [sias, setSias] = useState<Sia[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchSias() {
+      try {
+        const response = await fetch('/api/sia')
+        if (!response.ok) {
+          throw new Error('Erreur lors du chargement')
+        }
+        const data = await response.json()
+        setSias(data)
+      } catch (err) {
+        setError('Impossible de charger les systèmes')
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSias()
+  }, [])
+
+  // Calculate stats
+  const totalTensions = sias.reduce((acc, sia) => acc + (sia._count?.tensions || sia.tensions?.length || 0), 0)
+  const openTensions = sias.reduce((acc, sia) => {
+    const open = sia.tensions?.filter(t =>
+      t.status === 'DETECTED' || t.status === 'QUALIFIED' || t.status === 'IN_PROGRESS'
+    ).length || 0
+    return acc + open
+  }, 0)
+  const totalActions = sias.reduce((acc, sia) => acc + (sia._count?.actions || sia.actions?.length || 0), 0)
+  const completedActions = sias.reduce((acc, sia) => {
+    const completed = sia.actions?.filter(a => a.status === 'DONE').length || 0
+    return acc + completed
+  }, 0)
+  const pendingActions = totalActions - completedActions
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Chargement de vos systèmes...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Mes systèmes d'IA</h1>
+          <h1 className="text-2xl font-bold">Mes systèmes d&apos;IA</h1>
           <p className="text-muted-foreground">
-            Gérez et analysez l'éthique de vos systèmes
+            Gérez et analysez l&apos;éthique de vos systèmes
           </p>
         </div>
         <Button asChild>
@@ -199,7 +242,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total SIA</p>
-                <p className="text-2xl font-bold">{mockSias.length}</p>
+                <p className="text-2xl font-bold">{sias.length}</p>
               </div>
             </div>
           </CardContent>
@@ -212,9 +255,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Tensions ouvertes</p>
-                <p className="text-2xl font-bold">
-                  {mockSias.reduce((acc, sia) => acc + sia.openTensionCount, 0)}
-                </p>
+                <p className="text-2xl font-bold">{openTensions}</p>
               </div>
             </div>
           </CardContent>
@@ -227,12 +268,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Actions en cours</p>
-                <p className="text-2xl font-bold">
-                  {mockSias.reduce(
-                    (acc, sia) => acc + (sia.actionCount - sia.completedActionCount),
-                    0
-                  )}
-                </p>
+                <p className="text-2xl font-bold">{pendingActions}</p>
               </div>
             </div>
           </CardContent>
@@ -245,9 +281,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Actions terminées</p>
-                <p className="text-2xl font-bold">
-                  {mockSias.reduce((acc, sia) => acc + sia.completedActionCount, 0)}
-                </p>
+                <p className="text-2xl font-bold">{completedActions}</p>
               </div>
             </div>
           </CardContent>
@@ -255,9 +289,20 @@ export default function DashboardPage() {
       </div>
 
       {/* SIA Grid */}
-      {mockSias.length > 0 ? (
+      {error ? (
+        <Card className="p-12 text-center">
+          <div className="mx-auto max-w-md">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">Erreur de chargement</h3>
+            <p className="mt-2 text-muted-foreground">{error}</p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Réessayer
+            </Button>
+          </div>
+        </Card>
+      ) : sias.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {mockSias.map((sia) => (
+          {sias.map((sia) => (
             <SiaCard key={sia.id} sia={sia} />
           ))}
         </div>
@@ -269,8 +314,8 @@ export default function DashboardPage() {
             </div>
             <h3 className="mt-6 text-lg font-semibold">Aucun système</h3>
             <p className="mt-2 text-muted-foreground">
-              Vous n'avez pas encore de système d'IA. Créez votre premier système
-              pour commencer l'analyse éthique.
+              Vous n&apos;avez pas encore de système d&apos;IA. Créez votre premier système
+              pour commencer l&apos;analyse éthique.
             </p>
             <Button asChild className="mt-6">
               <Link href="/new">

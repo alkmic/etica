@@ -34,6 +34,16 @@ export async function GET(request: NextRequest) {
         ownerId: session.user.id,
       },
       include: {
+        tensions: {
+          select: {
+            status: true,
+          },
+        },
+        actions: {
+          select: {
+            status: true,
+          },
+        },
         _count: {
           select: {
             nodes: true,
