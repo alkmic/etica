@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import ReactFlow, {
   Background,
@@ -19,6 +19,10 @@ import CustomEdge from '@/components/canvas/custom-edge'
 import { CanvasToolbar } from '@/components/canvas/canvas-toolbar'
 import { NodeEditor } from '@/components/canvas/node-editor'
 import { EdgeEditor } from '@/components/canvas/edge-editor'
+import { EmptyStateWizard } from '@/components/canvas/empty-state-wizard'
+import { ContextualSuggestions } from '@/components/canvas/contextual-suggestions'
+import { EthicalDomainsPreview } from '@/components/canvas/ethical-domains-preview'
+import { SaveSummaryDialog } from '@/components/canvas/save-summary-dialog'
 import { FlowTemplate } from '@/lib/constants/flow-templates'
 
 const nodeTypes = {
@@ -27,6 +31,15 @@ const nodeTypes = {
 
 const edgeTypes = {
   custom: CustomEdge,
+}
+
+// SIA metadata interface
+interface SiaMetadata {
+  domain: string
+  decisionType: string
+  scale: string
+  hasVulnerable: boolean
+  dataTypes: string[]
 }
 
 function MapCanvas() {
@@ -60,6 +73,20 @@ function MapCanvas() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [siaMetadata, setSiaMetadata] = useState<SiaMetadata | null>(null)
+  const [lastAddedNodeType, setLastAddedNodeType] = useState<NodeType | undefined>()
+  const [showSuggestions, setShowSuggestions] = useState(true)
+  const [domainsExpanded, setDomainsExpanded] = useState(false)
+  const [saveResult, setSaveResult] = useState<{
+    success: boolean
+    tensionsDetected: number
+    nodeCount: number
+    edgeCount: number
+  } | null>(null)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+
+  // Track previous node count to detect new additions
+  const prevNodeCountRef = useRef(0)
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -75,6 +102,16 @@ function MapCanvas() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
 
+  // Track node additions for contextual suggestions
+  useEffect(() => {
+    if (nodes.length > prevNodeCountRef.current && nodes.length > 0) {
+      const lastNode = nodes[nodes.length - 1]
+      setLastAddedNodeType(lastNode.data.type as NodeType)
+      setShowSuggestions(true)
+    }
+    prevNodeCountRef.current = nodes.length
+  }, [nodes])
+
   // Load initial data
   useEffect(() => {
     async function loadData() {
@@ -84,16 +121,24 @@ function MapCanvas() {
         if (response.ok) {
           const data = await response.json()
 
+          // Store SIA metadata for domain detection
+          setSiaMetadata({
+            domain: data.domain || '',
+            decisionType: data.decisionType || '',
+            scale: data.scale || '',
+            hasVulnerable: data.hasVulnerable || false,
+            dataTypes: data.dataTypes || [],
+          })
+
           // Convert API nodes to ReactFlow nodes
           const flowNodes: CanvasNode[] = (data.nodes || []).map((node: {
             id: string
-            type: string // Prisma entity type (HUMAN, AI, INFRA, ORG)
+            type: string
             label: string
             positionX: number
             positionY: number
             attributes?: Record<string, unknown>
           }) => {
-            // Read properties from attributes (where we store them on save)
             const attrs = (node.attributes || {}) as {
               functionType?: string
               description?: string
@@ -102,10 +147,8 @@ function MapCanvas() {
               outputCount?: number
             }
 
-            // Get the function type from attributes, or infer from entity type
             let functionType: NodeType = attrs.functionType as NodeType
             if (!functionType || !['SOURCE', 'TREATMENT', 'DECISION', 'ACTION', 'STAKEHOLDER', 'STORAGE'].includes(functionType)) {
-              // Infer function type from entity type for backward compatibility
               const entityToFunctionMap: Record<string, NodeType> = {
                 'HUMAN': 'STAKEHOLDER',
                 'AI': 'TREATMENT',
@@ -131,7 +174,6 @@ function MapCanvas() {
             }
           })
 
-          // Convert API edges to ReactFlow edges
           const flowEdges: CanvasEdge[] = (data.edges || []).map((edge: {
             id: string
             sourceId: string
@@ -158,6 +200,7 @@ function MapCanvas() {
           setNodes(flowNodes)
           setEdges(flowEdges)
           setDirty(false)
+          prevNodeCountRef.current = flowNodes.length
         }
       } catch (error) {
         console.error('Error loading data:', error)
@@ -184,12 +227,26 @@ function MapCanvas() {
         y: window.innerHeight / 2,
       })
 
+      // Offset position based on existing nodes to avoid overlap
+      const offset = nodes.length * 20
+      position.x += offset
+      position.y += offset
+
+      const nodeLabels: Record<NodeType, string> = {
+        SOURCE: 'Source de données',
+        TREATMENT: 'Traitement',
+        DECISION: 'Décision',
+        ACTION: 'Action',
+        STAKEHOLDER: 'Partie prenante',
+        STORAGE: 'Stockage',
+      }
+
       const newNode: CanvasNode = {
         id: `node-${Date.now()}`,
         type: 'custom',
         position,
         data: {
-          label: `Nouveau ${type.toLowerCase()}`,
+          label: nodeLabels[type] || `Nouveau ${type.toLowerCase()}`,
           type,
           dataTypes: [],
           inputCount: 1,
@@ -199,15 +256,14 @@ function MapCanvas() {
 
       addNode(newNode)
     },
-    [screenToFlowPosition, addNode]
+    [screenToFlowPosition, addNode, nodes.length]
   )
 
   // Handle loading a template
   const handleLoadTemplate = useCallback(
     (template: FlowTemplate) => {
-      // Convert template nodes to ReactFlow nodes
       const flowNodes: CanvasNode[] = template.nodes.map((node) => ({
-        id: `${node.id}-${Date.now()}`, // Add timestamp to avoid ID collisions
+        id: `${node.id}-${Date.now()}`,
         type: 'custom',
         position: node.position,
         data: {
@@ -221,13 +277,11 @@ function MapCanvas() {
         },
       }))
 
-      // Create node ID mapping (old -> new)
       const nodeIdMap: Record<string, string> = {}
       template.nodes.forEach((node, index) => {
         nodeIdMap[node.id] = flowNodes[index].id
       })
 
-      // Convert template edges to ReactFlow edges
       const flowEdges: CanvasEdge[] = template.edges.map((edge) => ({
         id: `${edge.id}-${Date.now()}`,
         source: nodeIdMap[edge.source],
@@ -245,8 +299,9 @@ function MapCanvas() {
       setNodes(flowNodes)
       setEdges(flowEdges)
       setDirty(true)
+      prevNodeCountRef.current = flowNodes.length
+      setShowSuggestions(false)
 
-      // Fit view after a short delay to ensure nodes are rendered
       setTimeout(() => fitView({ padding: 0.2 }), 100)
 
       toast({
@@ -261,6 +316,7 @@ function MapCanvas() {
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: CanvasNode) => {
       selectNode(node)
+      setShowSuggestions(false)
     },
     [selectNode]
   )
@@ -283,7 +339,6 @@ function MapCanvas() {
   const handleSave = useCallback(async () => {
     setIsSaving(true)
     try {
-      // Save nodes
       const nodesData = nodes.map((node) => ({
         id: node.id,
         type: node.data.type,
@@ -297,7 +352,6 @@ function MapCanvas() {
         positionY: node.position.y,
       }))
 
-      // Save edges
       const edgesData = edges.map((edge) => ({
         id: edge.id,
         sourceId: edge.source,
@@ -320,53 +374,41 @@ function MapCanvas() {
         const data = await response.json()
         setDirty(false)
 
-        // Check if new tensions were detected
-        const newTensionsCount = data.tensionsDetected || 0
-
-        if (newTensionsCount > 0) {
-          toast({
-            title: 'Sauvegardé avec succès',
-            description: `${newTensionsCount} tension(s) éthique(s) détectée(s). Analysez-les dans l'onglet Tensions.`,
-            action: (
-              <Button variant="outline" size="sm" asChild>
-                <a href={`/${siaId}/tensions`}>Voir les tensions</a>
-              </Button>
-            ),
-          })
-        } else {
-          toast({
-            title: 'Sauvegardé',
-            description: 'La cartographie a été enregistrée. Continuez à modéliser vos flux.',
-          })
-        }
+        // Show summary dialog
+        setSaveResult({
+          success: true,
+          tensionsDetected: data.tensionsDetected || 0,
+          nodeCount: nodes.length,
+          edgeCount: edges.length,
+        })
+        setShowSaveDialog(true)
       } else {
         throw new Error('Save failed')
       }
     } catch (error) {
       console.error('Error saving:', error)
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de sauvegarder',
-        variant: 'destructive',
+      setSaveResult({
+        success: false,
+        tensionsDetected: 0,
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
       })
+      setShowSaveDialog(true)
     } finally {
       setIsSaving(false)
     }
-  }, [nodes, edges, siaId, setDirty, toast])
+  }, [nodes, edges, siaId, setDirty])
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+S or Cmd+S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault()
         if (!isSaving && isDirty) {
           handleSave()
         }
       }
-      // Delete or Backspace to delete selected
       if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedNode || selectedEdge)) {
-        // Only if not focused on an input
         if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
           e.preventDefault()
           if (selectedNode) {
@@ -376,12 +418,10 @@ function MapCanvas() {
           }
         }
       }
-      // Escape to deselect
       if (e.key === 'Escape') {
         selectNode(null)
         selectEdge(null)
       }
-      // ? to toggle help
       if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
         if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
           setShowHelp((prev) => !prev)
@@ -420,6 +460,19 @@ function MapCanvas() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           <p className="text-muted-foreground">Chargement de la cartographie...</p>
         </div>
+      </div>
+    )
+  }
+
+  // Show empty state wizard if no nodes
+  if (nodes.length === 0 && !isLoading) {
+    return (
+      <div className="h-[calc(100vh-180px)] w-full relative border rounded-lg bg-gray-50">
+        <EmptyStateWizard
+          onAddNode={handleAddNode}
+          onLoadTemplate={handleLoadTemplate}
+          siaDomain={siaMetadata?.domain}
+        />
       </div>
     )
   }
@@ -472,6 +525,27 @@ function MapCanvas() {
         hasNodes={nodes.length > 0}
       />
 
+      {/* Contextual suggestions after adding nodes */}
+      {showSuggestions && nodes.length > 0 && nodes.length < 6 && !selectedNode && !selectedEdge && (
+        <ContextualSuggestions
+          nodes={nodes}
+          lastAddedNodeType={lastAddedNodeType}
+          onAddNode={handleAddNode}
+          onDismiss={() => setShowSuggestions(false)}
+        />
+      )}
+
+      {/* Real-time ethical domains preview */}
+      {siaMetadata && nodes.length > 0 && (
+        <EthicalDomainsPreview
+          sia={siaMetadata}
+          nodes={nodes}
+          edges={edges}
+          isExpanded={domainsExpanded}
+          onToggleExpand={() => setDomainsExpanded(!domainsExpanded)}
+        />
+      )}
+
       {selectedNode && (
         <NodeEditor
           node={selectedNode}
@@ -495,7 +569,7 @@ function MapCanvas() {
       {isDirty && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg shadow-lg border border-yellow-200 text-sm flex items-center gap-2">
           <span>Modifications non sauvegardées</span>
-          <kbd className="px-1.5 py-0.5 text-xs bg-yellow-200 rounded">⌘S</kbd>
+          <kbd className="px-1.5 py-0.5 text-xs bg-yellow-200 rounded">Ctrl+S</kbd>
         </div>
       )}
 
@@ -528,20 +602,20 @@ function MapCanvas() {
                 <h4 className="font-medium mb-2">Actions de base</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
-                    <span className="w-32">Ajouter un nœud</span>
+                    <span className="w-32">Ajouter un noeud</span>
                     <span>Cliquez sur une icône dans la barre d&apos;outils</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-32">Créer un flux</span>
-                    <span>Glissez d&apos;un point de sortie (→) vers un point d&apos;entrée (←)</span>
+                    <span>Glissez d&apos;un point de sortie vers un point d&apos;entrée</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-32">Modifier</span>
-                    <span>Cliquez sur un élément pour le sélectionner et l&apos;éditer</span>
+                    <span>Cliquez sur un élément pour le sélectionner</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-32">Déplacer</span>
-                    <span>Glissez un nœud pour le repositionner</span>
+                    <span>Glissez un noeud pour le repositionner</span>
                   </li>
                 </ul>
               </div>
@@ -549,12 +623,12 @@ function MapCanvas() {
                 <h4 className="font-medium mb-2">Raccourcis clavier</h4>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center gap-2">
-                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">⌘S</kbd>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Ctrl+S</kbd>
                     <span className="text-muted-foreground">Sauvegarder</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Delete</kbd>
-                    <span className="text-muted-foreground">Supprimer l&apos;élément sélectionné</span>
+                    <span className="text-muted-foreground">Supprimer la sélection</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Escape</kbd>
@@ -567,14 +641,25 @@ function MapCanvas() {
                 </ul>
               </div>
               <div className="pt-2 border-t">
+                <h4 className="font-medium mb-2">Domaines éthiques</h4>
                 <p className="text-sm text-muted-foreground">
-                  💡 <strong>Conseil :</strong> Utilisez les templates pour démarrer rapidement avec une structure pré-configurée adaptée à votre domaine.
+                  Le panneau en bas à droite affiche les domaines éthiques détectés
+                  automatiquement en fonction de votre cartographie. Ces domaines
+                  guident l&apos;analyse des tensions.
                 </p>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Post-save summary dialog */}
+      <SaveSummaryDialog
+        open={showSaveDialog}
+        onClose={() => setShowSaveDialog(false)}
+        siaId={siaId}
+        saveResult={saveResult}
+      />
     </div>
   )
 }
