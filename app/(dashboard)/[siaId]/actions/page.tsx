@@ -273,9 +273,20 @@ export default function ActionsPage() {
         setActions((prev) =>
           prev.map((a) => (a.id === action.id ? { ...a, status: newStatus } : a))
         )
+        toast({
+          title: newStatus === 'COMPLETED' ? 'Action terminée' : 'Action réouverte',
+          description: action.title,
+        })
+      } else {
+        throw new Error('Failed to update')
       }
     } catch (error) {
       console.error('Error updating action:', error)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de mettre à jour le statut',
+        variant: 'destructive',
+      })
     }
   }
 
