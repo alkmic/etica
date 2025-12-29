@@ -103,7 +103,12 @@ export default function NewSiaPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la création')
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || 'Erreur lors de la création'
+        const details = errorData.details
+          ? errorData.details.map((d: { message: string }) => d.message).join(', ')
+          : ''
+        throw new Error(details || errorMessage)
       }
 
       const sia = await response.json()
@@ -116,9 +121,10 @@ export default function NewSiaPage() {
 
       router.push(`/${sia.id}`)
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Une erreur inattendue est survenue'
       toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la création.',
+        title: 'Erreur de création',
+        description: message,
         variant: 'destructive',
       })
     } finally {

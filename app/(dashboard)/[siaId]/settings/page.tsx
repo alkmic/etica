@@ -64,10 +64,11 @@ const decisionTypeOptions = [
 ]
 
 const scaleOptions = [
-  { value: 'LOCAL', label: 'Local - Quelques personnes' },
-  { value: 'REGIONAL', label: 'Régional - Milliers de personnes' },
-  { value: 'NATIONAL', label: 'National - Millions de personnes' },
-  { value: 'INTERNATIONAL', label: 'International - Plusieurs pays' },
+  { value: 'TINY', label: 'Très petit - Moins de 100 personnes' },
+  { value: 'SMALL', label: 'Petit - 100 à 10 000 personnes' },
+  { value: 'MEDIUM', label: 'Moyen - 10 000 à 100 000 personnes' },
+  { value: 'LARGE', label: 'Grand - 100 000 à 1 million' },
+  { value: 'VERY_LARGE', label: 'Très grand - Plus d\'1 million' },
 ]
 
 export default function SettingsPage() {
@@ -90,7 +91,7 @@ export default function SettingsPage() {
     domain: '',
     status: 'DRAFT',
     decisionType: 'INFORMATIVE',
-    scale: 'LOCAL',
+    scale: 'MEDIUM',
   })
 
   useEffect(() => {

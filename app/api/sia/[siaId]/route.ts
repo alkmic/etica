@@ -13,8 +13,8 @@ const updateSiaSchema = z.object({
   dataTypes: z.array(z.string()).optional(),
   decisionType: z.enum(['INFORMATIVE', 'RECOMMENDATION', 'ASSISTED_DECISION', 'AUTO_DECISION']).optional(),
   populations: z.array(z.string()).optional(),
-  hasVulnerable: z.boolean().optional(),
-  scale: z.enum(['LOCAL', 'REGIONAL', 'NATIONAL', 'INTERNATIONAL']).optional(),
+  hasVulnerable: z.boolean().nullable().optional(),
+  scale: z.enum(['TINY', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE']).optional(),
   status: z.enum(['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED']).optional(),
 })
 
