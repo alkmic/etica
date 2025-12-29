@@ -77,9 +77,10 @@ interface Action {
 }
 
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-gray-100 text-gray-800',
+  TODO: 'bg-gray-100 text-gray-800',
   IN_PROGRESS: 'bg-blue-100 text-blue-800',
-  COMPLETED: 'bg-green-100 text-green-800',
+  BLOCKED: 'bg-orange-100 text-orange-800',
+  DONE: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
 }
 
@@ -91,9 +92,10 @@ const priorityColors: Record<string, string> = {
 }
 
 const statusLabels: Record<string, string> = {
-  PENDING: 'À faire',
+  TODO: 'À faire',
   IN_PROGRESS: 'En cours',
-  COMPLETED: 'Terminée',
+  BLOCKED: 'Bloquée',
+  DONE: 'Terminée',
   CANCELLED: 'Annulée',
 }
 
@@ -254,14 +256,14 @@ export default function ActionsPage() {
 
   // Check if action is overdue
   const isOverdue = (action: Action): boolean => {
-    if (!action.dueDate || action.status === 'COMPLETED' || action.status === 'CANCELLED') {
+    if (!action.dueDate || action.status === 'DONE' || action.status === 'CANCELLED') {
       return false
     }
     return new Date(action.dueDate) < new Date()
   }
 
   const handleToggleStatus = async (action: Action) => {
-    const newStatus = action.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED'
+    const newStatus = action.status === 'DONE' ? 'TODO' : 'DONE'
     try {
       const response = await fetch(`/api/sia/${siaId}/actions/${action.id}`, {
         method: 'PUT',
@@ -274,7 +276,7 @@ export default function ActionsPage() {
           prev.map((a) => (a.id === action.id ? { ...a, status: newStatus } : a))
         )
         toast({
-          title: newStatus === 'COMPLETED' ? 'Action terminée' : 'Action réouverte',
+          title: newStatus === 'DONE' ? 'Action terminée' : 'Action réouverte',
           description: action.title,
         })
       } else {
@@ -346,7 +348,7 @@ export default function ActionsPage() {
       }
     })
 
-  const completedCount = actions.filter((a) => a.status === 'COMPLETED').length
+  const completedCount = actions.filter((a) => a.status === 'DONE').length
   const progress = actions.length > 0 ? Math.round((completedCount / actions.length) * 100) : 0
 
   if (loading) {
@@ -508,9 +510,10 @@ export default function ActionsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="PENDING">À faire</SelectItem>
+            <SelectItem value="TODO">À faire</SelectItem>
             <SelectItem value="IN_PROGRESS">En cours</SelectItem>
-            <SelectItem value="COMPLETED">Terminée</SelectItem>
+            <SelectItem value="BLOCKED">Bloquée</SelectItem>
+            <SelectItem value="DONE">Terminée</SelectItem>
             <SelectItem value="CANCELLED">Annulée</SelectItem>
           </SelectContent>
         </Select>
@@ -585,7 +588,7 @@ export default function ActionsPage() {
                   <CardContent className="py-4">
                     <div className="flex items-start gap-4">
                       <Checkbox
-                        checked={action.status === 'COMPLETED'}
+                        checked={action.status === 'DONE'}
                         onCheckedChange={() => handleToggleStatus(action)}
                         className="mt-1"
                       />
@@ -593,7 +596,7 @@ export default function ActionsPage() {
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3
                             className={`font-medium ${
-                              action.status === 'COMPLETED' ? 'line-through text-muted-foreground' : ''
+                              action.status === 'DONE' ? 'line-through text-muted-foreground' : ''
                             }`}
                           >
                             {action.title}

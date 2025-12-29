@@ -111,25 +111,40 @@ function CustomEdge({
           }}
           className="nodrag nopan"
         >
-          {hasTension && (
-            <div
-              className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-white shadow-md border',
-                severity === 'CRITICAL' && 'border-red-300 text-red-700',
-                severity === 'HIGH' && 'border-orange-300 text-orange-700',
-                severity === 'MEDIUM' && 'border-yellow-300 text-yellow-700',
-                severity === 'LOW' && 'border-blue-300 text-blue-700'
-              )}
-            >
-              <AlertTriangle className="h-3 w-3" />
-              <span>Tension</span>
-            </div>
-          )}
-          {!hasTension && data?.dataTypes && data.dataTypes.length > 0 && (
-            <div className="px-2 py-1 rounded bg-white/90 shadow-sm border border-gray-200 text-xs text-gray-600 max-w-[120px] truncate">
-              {data.dataTypes.join(', ')}
-            </div>
-          )}
+          <div className="flex flex-col items-center gap-1">
+            {hasTension && (
+              <div
+                className={cn(
+                  'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-white shadow-md border',
+                  severity === 'CRITICAL' && 'border-red-300 text-red-700',
+                  severity === 'HIGH' && 'border-orange-300 text-orange-700',
+                  severity === 'MEDIUM' && 'border-yellow-300 text-yellow-700',
+                  severity === 'LOW' && 'border-blue-300 text-blue-700'
+                )}
+              >
+                <AlertTriangle className="h-3 w-3" />
+                <span>Tension</span>
+              </div>
+            )}
+            {data?.dataTypes && data.dataTypes.length > 0 && (
+              <div className={cn(
+                'px-2.5 py-1 rounded-md shadow-sm border text-xs font-medium',
+                selected
+                  ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                  : 'bg-white border-gray-300 text-gray-700'
+              )}>
+                {data.dataTypes.length > 2
+                  ? `${data.dataTypes.slice(0, 2).join(', ')} +${data.dataTypes.length - 2}`
+                  : data.dataTypes.join(', ')
+                }
+              </div>
+            )}
+            {data?.description && !hasData && (
+              <div className="px-2 py-1 rounded bg-gray-100 border border-gray-200 text-xs text-gray-600 max-w-[140px] truncate">
+                {data.description}
+              </div>
+            )}
+          </div>
         </div>
       </EdgeLabelRenderer>
     </>
