@@ -48,7 +48,7 @@ const demoSias = [
     id: 'demo-recrutement',
     name: 'Tri automatique de candidatures',
     domain: 'Ressources Humaines',
-    status: 'IN_PROGRESS',
+    status: 'ACTIVE',
     description: 'Analyse automatique des CV et pré-sélection des candidats pour les postes ouverts.',
     vigilanceLevel: 3,
     tensionCount: 4,
@@ -100,8 +100,8 @@ const vigilanceColors: Record<number, string> = {
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   DRAFT: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800' },
-  IN_PROGRESS: { label: 'En cours', color: 'bg-blue-100 text-blue-800' },
-  ACTIVE: { label: 'Actif', color: 'bg-green-100 text-green-800' },
+  ACTIVE: { label: 'Actif', color: 'bg-blue-100 text-blue-800' },
+  REVIEW: { label: 'En révision', color: 'bg-green-100 text-green-800' },
   ARCHIVED: { label: 'Archivé', color: 'bg-purple-100 text-purple-800' },
 }
 

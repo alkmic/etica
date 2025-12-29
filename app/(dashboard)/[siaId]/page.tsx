@@ -121,8 +121,8 @@ const severityLabels: Record<number, string> = {
 
 const statusColors: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-800',
-  IN_PROGRESS: 'bg-blue-100 text-blue-800',
-  COMPLETED: 'bg-green-100 text-green-800',
+  ACTIVE: 'bg-blue-100 text-blue-800',
+  REVIEW: 'bg-green-100 text-green-800',
   ARCHIVED: 'bg-purple-100 text-purple-800',
 }
 
@@ -293,8 +293,8 @@ export default function SiaDashboardPage() {
             <h1 className="text-3xl font-bold">{sia.name}</h1>
             <Badge className={statusColors[sia.status]}>
               {sia.status === 'DRAFT' && 'Brouillon'}
-              {sia.status === 'IN_PROGRESS' && 'En cours'}
-              {sia.status === 'COMPLETED' && 'Terminé'}
+              {sia.status === 'ACTIVE' && 'Actif'}
+              {sia.status === 'REVIEW' && 'En révision'}
               {sia.status === 'ARCHIVED' && 'Archivé'}
             </Badge>
           </div>

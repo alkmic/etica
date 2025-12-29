@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 const createSiaSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(100),
   description: z.string().optional(),
-  domain: z.string().optional(),
+  domain: z.enum(['HEALTH', 'FINANCE', 'HR', 'COMMERCE', 'JUSTICE', 'ADMINISTRATION', 'EDUCATION', 'TRANSPORT', 'SECURITY', 'MARKETING', 'OTHER']),
   dataTypes: z.array(z.string()).optional(),
   decisionType: z.enum(['INFORMATIVE', 'RECOMMENDATION', 'ASSISTED_DECISION', 'AUTO_DECISION']).optional(),
   populations: z.array(z.string()).optional(),
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         decisionType: validatedData.decisionType || 'INFORMATIVE',
         populations: validatedData.populations || [],
         hasVulnerable: validatedData.hasVulnerable || false,
-        scale: validatedData.scale || 'LOCAL',
+        scale: validatedData.scale || 'SMALL',
         status: 'DRAFT',
         ownerId: session.user.id,
         vigilanceScores: {

@@ -51,8 +51,8 @@ interface Sia {
 
 const statusOptions = [
   { value: 'DRAFT', label: 'Brouillon' },
-  { value: 'IN_PROGRESS', label: 'En cours' },
-  { value: 'COMPLETED', label: 'Terminé' },
+  { value: 'ACTIVE', label: 'Actif' },
+  { value: 'REVIEW', label: 'En révision' },
   { value: 'ARCHIVED', label: 'Archivé' },
 ]
 

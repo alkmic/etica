@@ -9,13 +9,13 @@ export const dynamic = 'force-dynamic'
 const updateSiaSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
-  domain: z.string().optional(),
+  domain: z.enum(['HEALTH', 'FINANCE', 'HR', 'COMMERCE', 'JUSTICE', 'ADMINISTRATION', 'EDUCATION', 'TRANSPORT', 'SECURITY', 'MARKETING', 'OTHER']).optional(),
   dataTypes: z.array(z.string()).optional(),
   decisionType: z.enum(['INFORMATIVE', 'RECOMMENDATION', 'ASSISTED_DECISION', 'AUTO_DECISION']).optional(),
   populations: z.array(z.string()).optional(),
   hasVulnerable: z.boolean().nullable().optional(),
   scale: z.enum(['TINY', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE']).optional(),
-  status: z.enum(['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED']).optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'REVIEW', 'ARCHIVED']).optional(),
 })
 
 // GET /api/sia/[siaId] - Get a specific SIA with all details
