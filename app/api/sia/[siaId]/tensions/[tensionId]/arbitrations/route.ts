@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 const createArbitrationSchema = z.object({
   decision: z.enum(['ACCEPT', 'MITIGATE', 'REJECT']),
-  justification: z.string().min(10, 'La justification doit faire au moins 10 caractères'),
+  justification: z.string().min(20, 'La justification doit faire au moins 20 caractères'),
 })
 
 // POST /api/sia/[siaId]/tensions/[tensionId]/arbitrations - Create a new arbitration
@@ -42,11 +42,14 @@ export async function POST(
       )
     }
 
-    // Check tension exists
+    // Check tension exists and include existing arbitration
     const tension = await db.tension.findFirst({
       where: {
         id: tensionId,
         siaId,
+      },
+      include: {
+        arbitration: true,
       },
     })
 
@@ -54,6 +57,14 @@ export async function POST(
       return NextResponse.json(
         { error: 'Tension non trouvée' },
         { status: 404 }
+      )
+    }
+
+    // Check if arbitration already exists
+    if (tension.arbitration) {
+      return NextResponse.json(
+        { error: 'Cette tension a déjà été arbitrée' },
+        { status: 409 }
       )
     }
 

@@ -449,6 +449,9 @@ model Arbitration {
   // Mesures compensatoires
   compensatoryMeasures String? @db.Text
 
+  // Créateur
+  createdBy      String?
+
   // Validation
   validatedById  String?
   validatedAt    DateTime?
