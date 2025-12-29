@@ -221,18 +221,32 @@ export async function PUT(
         })
 
         if (!existingTension) {
+          // Map confidence to severity (1-5 scale)
+          const severityMap: Record<string, number> = {
+            'LOW': 2,
+            'MEDIUM': 3,
+            'HIGH': 4,
+            'VERY_HIGH': 5,
+          }
+          const severity = severityMap[tension.confidence] || 3
+
           await db.tension.create({
             data: {
               siaId,
               pattern: tension.pattern,
               impactedDomains: tension.impactedDomains || [],
               description: tension.description,
-              severity: tension.severity,
+              severity,
               status: 'DETECTED',
               tensionEdges: {
-                create: tension.relatedEdges.map((edgeId: string) => ({
-                  edgeId,
-                })),
+                create: tension.relatedEdgeIds
+                  .filter((edgeId: string) =>
+                    // Only create relations for edges that exist
+                    updatedSia.edges.some(e => e.id === edgeId)
+                  )
+                  .map((edgeId: string) => ({
+                    edgeId,
+                  })),
               },
             },
           })
