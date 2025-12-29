@@ -131,6 +131,7 @@ export default function TensionDetailPage() {
   // Arbitration form
   const [decision, setDecision] = useState('')
   const [justification, setJustification] = useState('')
+  const [addingAction, setAddingAction] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchTension() {
@@ -158,6 +159,52 @@ export default function TensionDetailPage() {
       fetchTension()
     }
   }, [siaId, tensionId, router, toast])
+
+  const handleAddAction = async (templateId: string) => {
+    const template = Object.values(ACTION_TEMPLATES)
+      .flat()
+      .find((t) => t.id === templateId)
+
+    if (!template) return
+
+    setAddingAction(templateId)
+    try {
+      const response = await fetch(`/api/sia/${siaId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: template.title,
+          description: template.description,
+          category: template.category,
+          priority: template.priority || 'MEDIUM',
+          tensionId: tensionId,
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Action ajoutée',
+          description: `"${template.title}" a été ajoutée au plan d'action`,
+        })
+        // Refresh tension to show linked action
+        const tensionResponse = await fetch(`/api/sia/${siaId}/tensions/${tensionId}`)
+        if (tensionResponse.ok) {
+          const data = await tensionResponse.json()
+          setTension(data)
+        }
+      } else {
+        throw new Error('Failed to create action')
+      }
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'ajouter l\'action',
+        variant: 'destructive',
+      })
+    } finally {
+      setAddingAction(null)
+    }
+  }
 
   const handleSubmitArbitration = async () => {
     if (!decision || !justification) {
@@ -494,15 +541,45 @@ export default function TensionDetailPage() {
                       .flat()
                       .find((t) => t.id === actionId)
                     if (!template) return null
+                    const isAlreadyAdded = tension.actions.some(
+                      (a) => a.title === template.title
+                    )
                     return (
                       <div
                         key={actionId}
-                        className="p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                        className="p-3 rounded-lg border transition-colors"
                       >
-                        <p className="text-sm font-medium">{template.title}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {template.description}
-                        </p>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{template.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {template.description}
+                            </p>
+                          </div>
+                          {isAlreadyAdded ? (
+                            <Badge variant="secondary" className="shrink-0">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Ajoutée
+                            </Badge>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                              onClick={() => handleAddAction(actionId)}
+                              disabled={addingAction === actionId}
+                            >
+                              {addingAction === actionId ? (
+                                <Clock className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Ajouter
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )
                   })}

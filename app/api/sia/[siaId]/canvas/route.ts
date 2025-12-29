@@ -7,10 +7,31 @@ import { detectTensions } from '@/lib/rules/tension-rules'
 
 export const dynamic = 'force-dynamic'
 
+// Function types used by the frontend (what the node DOES)
+const functionTypes = ['SOURCE', 'TREATMENT', 'DECISION', 'ACTION', 'STAKEHOLDER', 'STORAGE'] as const
+
+// Entity types for Prisma (WHO/WHAT the node is)
+const entityTypes = ['HUMAN', 'AI', 'INFRA', 'ORG'] as const
+
+// Map function types to sensible default entity types
+const functionToEntityMap: Record<string, 'HUMAN' | 'AI' | 'INFRA' | 'ORG'> = {
+  'SOURCE': 'INFRA',
+  'TREATMENT': 'AI',
+  'DECISION': 'AI',
+  'ACTION': 'INFRA',
+  'STAKEHOLDER': 'HUMAN',
+  'STORAGE': 'INFRA',
+}
+
 const nodeSchema = z.object({
   id: z.string(),
-  type: z.enum(['HUMAN', 'AI', 'INFRA', 'ORG']),
+  type: z.string(), // Accept any string - will be validated and mapped
+  entityType: z.enum(entityTypes).optional(),
   label: z.string(),
+  description: z.string().optional(),
+  dataTypes: z.array(z.string()).optional(),
+  inputCount: z.number().optional(),
+  outputCount: z.number().optional(),
   attributes: z.record(z.unknown()).optional(),
   positionX: z.number(),
   positionY: z.number(),
@@ -20,10 +41,14 @@ const edgeSchema = z.object({
   id: z.string(),
   sourceId: z.string(),
   targetId: z.string(),
+  sourceHandle: z.string().optional(),
+  targetHandle: z.string().optional(),
   label: z.string().optional(),
-  direction: z.enum(['H2M', 'M2M', 'M2H', 'H2H']).default('M2M'),
-  nature: z.enum(['COLLECT', 'INFERENCE', 'ENRICHMENT', 'DECISION', 'RECOMMENDATION', 'NOTIFICATION', 'LEARNING', 'CONTROL', 'TRANSFER', 'STORAGE']).default('TRANSFER'),
+  description: z.string().optional(),
+  direction: z.enum(['H2M', 'M2M', 'M2H', 'H2H']).optional().default('M2M'),
+  nature: z.enum(['COLLECT', 'INFERENCE', 'ENRICHMENT', 'DECISION', 'RECOMMENDATION', 'NOTIFICATION', 'LEARNING', 'CONTROL', 'TRANSFER', 'STORAGE']).optional().default('TRANSFER'),
   dataCategories: z.array(z.string()).optional(),
+  domains: z.array(z.string()).optional(),
 })
 
 const canvasSchema = z.object({
@@ -74,15 +99,44 @@ export async function PUT(
       // Create new nodes
       if (validatedData.nodes.length > 0) {
         await tx.node.createMany({
-          data: validatedData.nodes.map((node) => ({
-            id: node.id,
-            siaId,
-            type: node.type,
-            label: node.label,
-            attributes: node.attributes || {},
-            positionX: node.positionX,
-            positionY: node.positionY,
-          })),
+          data: validatedData.nodes.map((node) => {
+            // Determine the entity type for Prisma
+            // If entityType is provided and valid, use it; otherwise map from function type
+            const isValidEntityType = entityTypes.includes(node.entityType as typeof entityTypes[number])
+            const isFunctionType = functionTypes.includes(node.type as typeof functionTypes[number])
+
+            let prismaType: 'HUMAN' | 'AI' | 'INFRA' | 'ORG'
+            if (isValidEntityType && node.entityType) {
+              prismaType = node.entityType
+            } else if (isFunctionType) {
+              prismaType = functionToEntityMap[node.type] || 'INFRA'
+            } else if (entityTypes.includes(node.type as typeof entityTypes[number])) {
+              // type is actually an entity type (old format)
+              prismaType = node.type as 'HUMAN' | 'AI' | 'INFRA' | 'ORG'
+            } else {
+              prismaType = 'INFRA' // Default fallback
+            }
+
+            // Store the function type and other data in attributes
+            const attributes = {
+              ...(node.attributes || {}),
+              functionType: isFunctionType ? node.type : undefined,
+              description: node.description,
+              dataTypes: node.dataTypes || [],
+              inputCount: node.inputCount || 1,
+              outputCount: node.outputCount || 1,
+            }
+
+            return {
+              id: node.id,
+              siaId,
+              type: prismaType,
+              label: node.label,
+              attributes,
+              positionX: node.positionX,
+              positionY: node.positionY,
+            }
+          }),
         })
       }
 
@@ -121,6 +175,9 @@ export async function PUT(
     if (updatedSia) {
       // Prepare context for tension detection
       const siaContext = {
+        id: updatedSia.id,
+        name: updatedSia.name,
+        domain: updatedSia.domain,
         decisionType: updatedSia.decisionType,
         dataTypes: updatedSia.dataTypes,
         hasVulnerable: updatedSia.hasVulnerable,
@@ -130,15 +187,24 @@ export async function PUT(
       const nodeContexts = updatedSia.nodes.map((node) => ({
         id: node.id,
         type: node.type,
-        attributes: node.attributes,
+        label: node.label,
+        attributes: node.attributes as Record<string, unknown>,
       }))
 
       const edgeContexts = updatedSia.edges.map((edge) => ({
         id: edge.id,
         sourceId: edge.sourceId,
         targetId: edge.targetId,
-        dataCategories: edge.dataCategories,
         nature: edge.nature,
+        sensitivity: edge.sensitivity,
+        automation: edge.automation,
+        direction: edge.direction,
+        dataCategories: edge.dataCategories,
+        opacity: edge.opacity,
+        agentivity: edge.agentivity,
+        asymmetry: edge.asymmetry,
+        irreversibility: edge.irreversibility,
+        scalability: edge.scalability,
       }))
 
       // Detect new tensions
@@ -174,7 +240,12 @@ export async function PUT(
       }
     }
 
-    return NextResponse.json({ success: true })
+    // Count newly created tensions
+    const tensionsDetected = await db.tension.count({
+      where: { siaId },
+    })
+
+    return NextResponse.json({ success: true, tensionsDetected })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

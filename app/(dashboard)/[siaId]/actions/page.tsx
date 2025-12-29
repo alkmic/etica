@@ -369,16 +369,14 @@ export default function ActionsPage() {
             Gérez les mesures de mitigation et d&apos;amélioration
           </p>
         </div>
+        <Button onClick={() => handleOpenDialog()}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle action
+        </Button>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           if (!open) handleCloseDialog()
           else setIsDialogOpen(true)
         }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle action
-            </Button>
-          </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>{editingAction ? 'Modifier l\'action' : 'Créer une action'}</DialogTitle>

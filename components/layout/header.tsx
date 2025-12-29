@@ -57,8 +57,8 @@ export function Header({
 }: HeaderProps) {
   const router = useRouter()
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' })
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/login' })
   }
 
   return (
@@ -91,15 +91,23 @@ export function Header({
           )}
         </div>
 
-        {/* Center section - Search */}
+        {/* Center section - Search (coming soon) */}
         <div className="hidden md:flex flex-1 max-w-md mx-8">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher un SIA, une tension..."
-              className="pl-10 bg-muted/50"
-            />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher un SIA, une tension..."
+                  className="pl-10 bg-muted/50 cursor-not-allowed"
+                  disabled
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Recherche bientôt disponible</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Right section */}
@@ -227,7 +235,7 @@ export function Header({
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                <DropdownMenuItem onSelect={handleSignOut} className="text-destructive cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   Se déconnecter
                 </DropdownMenuItem>

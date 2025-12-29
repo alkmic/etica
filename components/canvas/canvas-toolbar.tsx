@@ -256,17 +256,18 @@ export function CanvasToolbar({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
+                variant="default"
+                size="sm"
+                className="gap-2"
                 onClick={onSave}
                 disabled={isSaving}
               >
                 <Save className="h-4 w-4" />
+                {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>Sauvegarder</p>
+              <p>Sauvegarder et analyser les tensions</p>
             </TooltipContent>
           </Tooltip>
 
