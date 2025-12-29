@@ -12,6 +12,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
+import { HelpCircle, X, Keyboard } from 'lucide-react'
 import { useCanvasStore, CanvasNode, CanvasEdge } from '@/lib/stores/canvas-store'
 import CustomNode, { NodeType } from '@/components/canvas/custom-node'
 import CustomEdge from '@/components/canvas/custom-edge'
@@ -58,6 +59,7 @@ function MapCanvas() {
   } = useCanvasStore()
 
   const [isSaving, setIsSaving] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -85,29 +87,49 @@ function MapCanvas() {
           // Convert API nodes to ReactFlow nodes
           const flowNodes: CanvasNode[] = (data.nodes || []).map((node: {
             id: string
-            type: string
+            type: string // Prisma entity type (HUMAN, AI, INFRA, ORG)
             label: string
-            description?: string
-            dataTypes?: string[]
-            entityType?: string
-            inputCount?: number
-            outputCount?: number
             positionX: number
             positionY: number
-          }) => ({
-            id: node.id,
-            type: 'custom',
-            position: { x: node.positionX || 0, y: node.positionY || 0 },
-            data: {
-              label: node.label,
-              type: node.type as NodeType,
-              entityType: node.entityType,
-              description: node.description,
-              dataTypes: node.dataTypes || [],
-              inputCount: node.inputCount || 1,
-              outputCount: node.outputCount || 1,
-            },
-          }))
+            attributes?: Record<string, unknown>
+          }) => {
+            // Read properties from attributes (where we store them on save)
+            const attrs = (node.attributes || {}) as {
+              functionType?: string
+              description?: string
+              dataTypes?: string[]
+              inputCount?: number
+              outputCount?: number
+            }
+
+            // Get the function type from attributes, or infer from entity type
+            let functionType: NodeType = attrs.functionType as NodeType
+            if (!functionType || !['SOURCE', 'TREATMENT', 'DECISION', 'ACTION', 'STAKEHOLDER', 'STORAGE'].includes(functionType)) {
+              // Infer function type from entity type for backward compatibility
+              const entityToFunctionMap: Record<string, NodeType> = {
+                'HUMAN': 'STAKEHOLDER',
+                'AI': 'TREATMENT',
+                'INFRA': 'SOURCE',
+                'ORG': 'STAKEHOLDER',
+              }
+              functionType = entityToFunctionMap[node.type] || 'SOURCE'
+            }
+
+            return {
+              id: node.id,
+              type: 'custom',
+              position: { x: node.positionX || 0, y: node.positionY || 0 },
+              data: {
+                label: node.label,
+                type: functionType,
+                entityType: node.type as 'HUMAN' | 'AI' | 'INFRA' | 'ORG',
+                description: attrs.description || '',
+                dataTypes: attrs.dataTypes || [],
+                inputCount: attrs.inputCount || 1,
+                outputCount: attrs.outputCount || 1,
+              },
+            }
+          })
 
           // Convert API edges to ReactFlow edges
           const flowEdges: CanvasEdge[] = (data.edges || []).map((edge: {
@@ -332,6 +354,45 @@ function MapCanvas() {
     }
   }, [nodes, edges, siaId, setDirty, toast])
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+S or Cmd+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (!isSaving && isDirty) {
+          handleSave()
+        }
+      }
+      // Delete or Backspace to delete selected
+      if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedNode || selectedEdge)) {
+        // Only if not focused on an input
+        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+          e.preventDefault()
+          if (selectedNode) {
+            deleteNode(selectedNode.id)
+          } else if (selectedEdge) {
+            deleteEdge(selectedEdge.id)
+          }
+        }
+      }
+      // Escape to deselect
+      if (e.key === 'Escape') {
+        selectNode(null)
+        selectEdge(null)
+      }
+      // ? to toggle help
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+          setShowHelp((prev) => !prev)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSaving, isDirty, selectedNode, selectedEdge, deleteNode, deleteEdge, selectNode, selectEdge, handleSave])
+
   // Handle delete selected
   const handleDelete = useCallback(() => {
     if (selectedNode) {
@@ -432,8 +493,86 @@ function MapCanvas() {
       )}
 
       {isDirty && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg shadow-lg border border-yellow-200 text-sm">
-          Modifications non sauvegardées
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg shadow-lg border border-yellow-200 text-sm flex items-center gap-2">
+          <span>Modifications non sauvegardées</span>
+          <kbd className="px-1.5 py-0.5 text-xs bg-yellow-200 rounded">⌘S</kbd>
+        </div>
+      )}
+
+      {/* Help button */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="absolute bottom-4 right-4 z-10 bg-white/90 backdrop-blur-sm"
+        onClick={() => setShowHelp(true)}
+      >
+        <HelpCircle className="h-4 w-4 mr-1" />
+        Aide
+      </Button>
+
+      {/* Help overlay */}
+      {showHelp && (
+        <div className="absolute inset-0 z-50 bg-black/50 flex items-center justify-center" onClick={() => setShowHelp(false)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Keyboard className="h-5 w-5" />
+                Guide de la cartographie
+              </h3>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowHelp(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <h4 className="font-medium mb-2">Actions de base</h4>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <span className="w-32">Ajouter un nœud</span>
+                    <span>Cliquez sur une icône dans la barre d&apos;outils</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-32">Créer un flux</span>
+                    <span>Glissez d&apos;un point de sortie (→) vers un point d&apos;entrée (←)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-32">Modifier</span>
+                    <span>Cliquez sur un élément pour le sélectionner et l&apos;éditer</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-32">Déplacer</span>
+                    <span>Glissez un nœud pour le repositionner</span>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium mb-2">Raccourcis clavier</h4>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">⌘S</kbd>
+                    <span className="text-muted-foreground">Sauvegarder</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Delete</kbd>
+                    <span className="text-muted-foreground">Supprimer l&apos;élément sélectionné</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">Escape</kbd>
+                    <span className="text-muted-foreground">Désélectionner</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 bg-gray-100 rounded text-xs font-mono">?</kbd>
+                    <span className="text-muted-foreground">Afficher/masquer l&apos;aide</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-2 border-t">
+                <p className="text-sm text-muted-foreground">
+                  💡 <strong>Conseil :</strong> Utilisez les templates pour démarrer rapidement avec une structure pré-configurée adaptée à votre domaine.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

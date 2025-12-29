@@ -27,7 +27,6 @@ function CustomEdge({
   targetPosition,
   data,
   selected,
-  markerEnd,
 }: EdgeProps<CustomEdgeData>) {
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -40,6 +39,7 @@ function CustomEdge({
 
   const hasTension = data?.hasTension
   const severity = data?.tensionSeverity || 'LOW'
+  const hasData = data?.dataTypes && data.dataTypes.length > 0
 
   const severityColors: Record<string, string> = {
     LOW: '#3b82f6',
@@ -48,10 +48,46 @@ function CustomEdge({
     CRITICAL: '#ef4444',
   }
 
-  const strokeColor = hasTension ? severityColors[severity] : '#94a3b8'
+  // Determine stroke color based on state
+  let strokeColor = '#64748b' // Default slate color for visibility
+  if (hasTension) {
+    strokeColor = severityColors[severity]
+  } else if (hasData) {
+    strokeColor = '#6366f1' // Indigo for edges with data types
+  }
+
+  const markerId = `arrow-${id}`
 
   return (
     <>
+      {/* Arrow marker definition */}
+      <defs>
+        <marker
+          id={markerId}
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto-start-reverse"
+        >
+          <path
+            d="M 0 0 L 10 5 L 0 10 z"
+            fill={selected ? '#6366f1' : strokeColor}
+          />
+        </marker>
+      </defs>
+
+      {/* Invisible wider path for easier selection */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={20}
+        className="react-flow__edge-interaction"
+      />
+
+      {/* Visible edge path */}
       <path
         id={id}
         className={cn(
@@ -60,12 +96,9 @@ function CustomEdge({
         )}
         d={edgePath}
         fill="none"
-        stroke={selected ? undefined : strokeColor}
+        stroke={selected ? '#6366f1' : strokeColor}
         strokeWidth={selected ? 3 : hasTension ? 2.5 : 2}
-        markerEnd={markerEnd}
-        style={{
-          strokeDasharray: hasTension ? undefined : '5,5',
-        }}
+        markerEnd={`url(#${markerId})`}
       />
 
       {/* Edge label */}
