@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { TENSION_PATTERNS, TensionPatternId } from '@/lib/constants/tension-patterns'
 
 // GET /api/sia/[siaId]/tensions - List all tensions for a SIA
 export async function GET(
@@ -19,11 +20,14 @@ export async function GET(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -37,27 +41,45 @@ export async function GET(
     const tensions = await db.tension.findMany({
       where: { siaId },
       include: {
-        edges: {
+        tensionEdges: {
           include: {
             edge: {
               include: {
-                sourceNode: true,
-                targetNode: true,
+                source: true,
+                target: true,
               },
             },
           },
         },
-        arbitrations: {
-          orderBy: { createdAt: 'desc' },
+        arbitration: true,
+        actions: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            priority: true,
+          },
         },
       },
       orderBy: [
-        { severity: 'desc' },
+        { calculatedSeverity: 'desc' },
+        { baseSeverity: 'desc' },
         { createdAt: 'desc' },
       ],
     })
 
-    return NextResponse.json(tensions)
+    // Enrich with pattern info
+    const enrichedTensions = tensions.map((tension) => {
+      const pattern = TENSION_PATTERNS[tension.pattern as TensionPatternId]
+      return {
+        ...tension,
+        patternTitle: pattern?.title || tension.pattern,
+        patternDescription: pattern?.description || tension.description,
+        poles: pattern?.poles || [],
+      }
+    })
+
+    return NextResponse.json(enrichedTensions)
   } catch (error) {
     console.error('Error fetching tensions:', error)
     return NextResponse.json(
