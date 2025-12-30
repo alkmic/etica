@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import {
   ArrowRight,
-  ArrowLeft,
   Shield,
   Eye,
   Scale,
@@ -178,200 +177,168 @@ export default function DemoPage() {
   const selectedSia = demoSias[0]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Navigation */}
-      <header className="container mx-auto px-4 py-6">
-        <nav className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-xl">
-              E
-            </div>
-            <span className="text-xl font-semibold">ETICA</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild>
-              <Link href="/">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href="/register">Créer un compte</Link>
-            </Button>
-          </div>
-        </nav>
-      </header>
+    <div className="container mx-auto px-4 py-12">
+      {/* Header */}
+      <div className="text-center mb-12">
+        <Badge className="mb-4">Démonstration</Badge>
+        <h1 className="text-4xl font-bold mb-4">
+          Découvrez ETICA en action
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Explorez des exemples de systèmes d&apos;IA analysés avec notre méthodologie
+          basée sur les 8 domaines de vigilance éthique.
+        </p>
+      </div>
 
-      <main className="container mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <Badge className="mb-4">Démonstration</Badge>
-          <h1 className="text-4xl font-bold mb-4">
-            Découvrez ETICA en action
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Explorez des exemples de systèmes d&apos;IA analysés avec notre méthodologie
-            basée sur les 8 domaines de vigilance éthique.
-          </p>
+      {/* Demo SIA Cards */}
+      <section className="mb-16">
+        <h2 className="text-2xl font-bold mb-6">Exemples de systèmes analysés</h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {demoSias.map((sia) => (
+            <DemoSiaCard key={sia.id} sia={sia} />
+          ))}
         </div>
+      </section>
 
-        {/* Demo SIA Cards */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-6">Exemples de systèmes analysés</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {demoSias.map((sia) => (
-              <DemoSiaCard key={sia.id} sia={sia} />
-            ))}
-          </div>
-        </section>
+      {/* Detailed View of First SIA */}
+      <section className="mb-16">
+        <h2 className="text-2xl font-bold mb-6">
+          Analyse détaillée : {selectedSia.name}
+        </h2>
 
-        {/* Detailed View of First SIA */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-6">
-            Analyse détaillée : {selectedSia.name}
-          </h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Domain Scores */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Scores par domaine
+              </CardTitle>
+              <CardDescription>
+                Évaluation sur les 8 domaines de vigilance (1-5)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Object.entries(selectedSia.domainScores).map(([domain, score]) => {
+                  const percentage = (score / 5) * 100
+                  const icons: Record<string, React.ReactNode> = {
+                    'Vie privée': <Lock className="h-4 w-4" />,
+                    'Équité': <Scale className="h-4 w-4" />,
+                    'Transparence': <Eye className="h-4 w-4" />,
+                    'Autonomie': <Users className="h-4 w-4" />,
+                    'Sécurité': <Shield className="h-4 w-4" />,
+                    'Recours': <MessageSquare className="h-4 w-4" />,
+                    'Durabilité': <Leaf className="h-4 w-4" />,
+                    'Responsabilité': <ClipboardCheck className="h-4 w-4" />,
+                  }
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Domain Scores */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Scores par domaine
-                </CardTitle>
-                <CardDescription>
-                  Évaluation sur les 8 domaines de vigilance (1-5)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(selectedSia.domainScores).map(([domain, score]) => {
-                    const percentage = (score / 5) * 100
-                    const icons: Record<string, React.ReactNode> = {
-                      'Vie privée': <Lock className="h-4 w-4" />,
-                      'Équité': <Scale className="h-4 w-4" />,
-                      'Transparence': <Eye className="h-4 w-4" />,
-                      'Autonomie': <Users className="h-4 w-4" />,
-                      'Sécurité': <Shield className="h-4 w-4" />,
-                      'Recours': <MessageSquare className="h-4 w-4" />,
-                      'Durabilité': <Leaf className="h-4 w-4" />,
-                      'Responsabilité': <ClipboardCheck className="h-4 w-4" />,
-                    }
-
-                    return (
-                      <div key={domain} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                          {icons[domain]}
+                  return (
+                    <div key={domain} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        {icons[domain]}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium">{domain}</span>
+                          <span className="text-sm text-muted-foreground">{score}/5</span>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm font-medium">{domain}</span>
-                            <span className="text-sm text-muted-foreground">{score}/5</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full transition-all"
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all"
+                            style={{ width: `${percentage}%` }}
+                          />
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Features Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Fonctionnalités incluses
-                </CardTitle>
-                <CardDescription>
-                  Ce que vous pouvez faire avec ETICA
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <Map className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Cartographie interactive</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Visualisez les flux de données et les acteurs de votre système IA
-                      </p>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Détection des tensions</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Identification automatique des dilemmes éthiques potentiels
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <Scale className="h-5 w-5 text-blue-500 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Arbitrage documenté</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Documentez vos décisions éthiques de manière structurée
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Plan d&apos;action</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Suivez les mesures correctives et leur progression
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="text-center">
-          <Card className="bg-primary text-primary-foreground border-0">
-            <CardContent className="py-12">
-              <h2 className="text-3xl font-bold mb-4">
-                Prêt à analyser vos propres systèmes ?
-              </h2>
-              <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
-                Créez votre compte gratuit et commencez à documenter l&apos;éthique
-                de vos systèmes d&apos;IA dès maintenant.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" variant="secondary" asChild>
-                  <Link href="/register">
-                    Créer un compte gratuit
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground/20 hover:bg-primary-foreground/10" asChild>
-                  <Link href="/login">
-                    Se connecter
-                  </Link>
-                </Button>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
-        </section>
-      </main>
 
-      {/* Footer */}
-      <footer className="border-t py-8 mt-16">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} ETICA. Tous droits réservés.
+          {/* Features Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Fonctionnalités incluses
+              </CardTitle>
+              <CardDescription>
+                Ce que vous pouvez faire avec ETICA
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <Map className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-medium">Cartographie interactive</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Visualisez les flux de données et les acteurs de votre système IA
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium">Détection des tensions</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Identification automatique des dilemmes éthiques potentiels
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <Scale className="h-5 w-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium">Arbitrage documenté</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Documentez vos décisions éthiques de manière structurée
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium">Plan d&apos;action</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Suivez les mesures correctives et leur progression
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </footer>
+      </section>
+
+      {/* CTA */}
+      <section className="text-center">
+        <Card className="bg-primary text-primary-foreground border-0">
+          <CardContent className="py-12">
+            <h2 className="text-3xl font-bold mb-4">
+              Prêt à analyser vos propres systèmes ?
+            </h2>
+            <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
+              Créez votre compte et commencez à documenter l&apos;éthique
+              de vos systèmes d&apos;IA dès maintenant.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" variant="secondary" asChild>
+                <Link href="/register">
+                  Créer un compte
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground/20 hover:bg-primary-foreground/10" asChild>
+                <Link href="/login">
+                  Se connecter
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   )
 }

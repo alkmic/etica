@@ -2,8 +2,18 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-// Routes that don't require authentication
-const publicRoutes = ['/', '/login', '/register']
+// Routes that don't require authentication (marketing pages, auth pages)
+const publicRoutes = [
+  '/',
+  '/login',
+  '/register',
+  '/about',
+  '/methodology',
+  '/demo',
+  '/contact',
+  '/privacy',
+  '/terms',
+]
 
 // Routes that start with these prefixes are public
 const publicPrefixes = ['/api/auth']
