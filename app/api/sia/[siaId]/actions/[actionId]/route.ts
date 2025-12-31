@@ -69,7 +69,7 @@ export async function GET(
 const updateActionSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().optional(),
-  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'CANCELLED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
   category: z
     .enum([
@@ -84,7 +84,7 @@ const updateActionSchema = z.object({
     ])
     .optional(),
   dueDate: z.string().nullable().optional(),
-  assignee: z.string().nullable().optional(),
+  assigneeId: z.string().nullable().optional(),
 })
 
 // PUT /api/sia/[siaId]/actions/[actionId] - Update an action

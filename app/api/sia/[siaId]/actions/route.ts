@@ -91,7 +91,7 @@ const createActionSchema = z.object({
     ])
     .default('TECHNICAL'),
   dueDate: z.string().optional(),
-  assignee: z.string().optional(),
+  assigneeId: z.string().optional(),
   tensionId: z.string().optional(),
 })
 
@@ -139,9 +139,9 @@ export async function POST(
         description: validatedData.description || '',
         priority: validatedData.priority,
         category: validatedData.category,
-        status: 'PENDING',
+        status: 'TODO',
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        assignee: validatedData.assignee || null,
+        assigneeId: validatedData.assigneeId || null,
         tensionId: validatedData.tensionId || null,
       },
       include: {
