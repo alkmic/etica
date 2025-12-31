@@ -26,6 +26,9 @@ export interface CanvasNode extends Node {
 }
 
 export interface CanvasEdge extends Edge {
+  id: string
+  source: string
+  target: string
   data?: {
     dataTypes?: string[]
     description?: string

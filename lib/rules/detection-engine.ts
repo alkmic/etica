@@ -2,9 +2,9 @@
 // Analyse la cartographie (nœuds, flux, attributs) et détecte les tensions éthiques
 
 import { DomainId } from '@/lib/constants/domains'
-import { FLOW_NATURES, FlowNatureId, getTriggeredDomains, isHighRiskDomain, SiaDomainId, AUTOMATION_LEVELS, SCALE_LEVELS, ScaleId } from '@/lib/constants/data-types'
+import { FlowNatureId, isHighRiskDomain, SiaDomainId, SCALE_LEVELS, ScaleId } from '@/lib/constants/data-types'
 import { TensionPatternId, TENSION_PATTERNS, TensionPattern, calculateFinalSeverity, TensionLevel } from '@/lib/constants/tension-patterns'
-import { AIAttributes, HumanAttributes, InfraAttributes, NodeTypeId, nodeHasCharacteristic } from '@/lib/constants/node-types'
+import { AIAttributes, HumanAttributes, InfraAttributes, NodeTypeId } from '@/lib/constants/node-types'
 
 // ============================================
 // TYPES D'ENTRÉE
@@ -104,7 +104,7 @@ function getNodesByType(nodes: NodeContext[], type: NodeTypeId): NodeContext[] {
   return nodes.filter(n => n.type === type)
 }
 
-function getEdgesByNature(edges: EdgeContext[], nature: FlowNatureId): EdgeContext[] {
+function _getEdgesByNature(edges: EdgeContext[], nature: FlowNatureId): EdgeContext[] {
   return edges.filter(e => e.nature === nature)
 }
 
@@ -211,7 +211,7 @@ function hasDataMinimization(edges: EdgeContext[]): boolean {
   return allCategories.size <= 3
 }
 
-function hasLLMOrGenAI(nodes: NodeContext[]): boolean {
+function _hasLLMOrGenAI(nodes: NodeContext[]): boolean {
   return nodes.some(n => {
     if (n.type !== 'AI') return false
     const attrs = n.attributes as AIAttributes
