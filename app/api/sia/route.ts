@@ -29,7 +29,10 @@ export async function GET(_request: NextRequest) {
 
     const sias = await db.sia.findMany({
       where: {
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
       include: {
         _count: {
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
         hasVulnerable: validatedData.hasVulnerable || false,
         scale: validatedData.scale || 'LOCAL',
         status: 'DRAFT',
-        userId: session.user.id,
+        ownerId: session.user.id,
         vigilanceScores: {
           global: 0,
           domains: {

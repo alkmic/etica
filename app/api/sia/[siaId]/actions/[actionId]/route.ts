@@ -20,11 +20,14 @@ export async function GET(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -100,11 +103,14 @@ export async function PUT(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -165,11 +171,14 @@ export async function DELETE(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
