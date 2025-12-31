@@ -35,8 +35,8 @@ export async function GET(
         nodes: true,
         edges: {
           include: {
-            sourceNode: true,
-            targetNode: true,
+            source: true,
+            target: true,
           },
         },
         tensions: {
@@ -129,10 +129,10 @@ interface SiaExport {
   }>
   edges: Array<{
     id: string
-    sourceNode: { label: string }
-    targetNode: { label: string }
-    dataTypes: string[]
-    domains: string[]
+    source: { label: string }
+    target: { label: string }
+    dataCategories: string[]
+    nature: string
   }>
   tensions: Array<{
     id: string

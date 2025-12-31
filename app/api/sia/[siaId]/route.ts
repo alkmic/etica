@@ -44,8 +44,8 @@ export async function GET(
         nodes: true,
         edges: {
           include: {
-            sourceNode: true,
-            targetNode: true,
+            source: true,
+            target: true,
           },
         },
         tensions: {
