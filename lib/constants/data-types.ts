@@ -142,6 +142,9 @@ export type DataCategory = typeof DATA_CATEGORIES[DataCategoryId]
 export const DATA_CATEGORY_IDS = Object.keys(DATA_CATEGORIES) as DataCategoryId[]
 export const DATA_CATEGORY_LIST = Object.values(DATA_CATEGORIES)
 
+// Alias for backward compatibility
+export const DATA_TYPES = DATA_CATEGORIES
+
 // ============================================
 // NIVEAUX DE SENSIBILITÉ
 // ============================================

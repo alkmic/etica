@@ -166,8 +166,7 @@ export async function POST(
       const createdActions: any[] = []
 
       if (validatedData.decisionType === 'MITIGATE' && validatedData.selectedMeasures) {
-        // Get pattern info for priority calculation
-        const pattern = TENSION_PATTERNS[tension.pattern as TensionPatternId]
+        // Calculate priority based on tension severity
         const severity = tension.calculatedSeverity || tension.baseSeverity || 3
 
         // Convert severity to priority

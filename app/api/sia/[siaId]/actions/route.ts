@@ -45,8 +45,8 @@ export async function GET(
           select: {
             id: true,
             description: true,
-            primaryDomain: true,
-            secondaryDomain: true,
+            pattern: true,
+            impactedDomains: true,
           },
         },
         evidences: {
@@ -149,8 +149,8 @@ export async function POST(
           select: {
             id: true,
             description: true,
-            primaryDomain: true,
-            secondaryDomain: true,
+            pattern: true,
+            impactedDomains: true,
           },
         },
         evidences: true,
