@@ -167,7 +167,8 @@ export async function POST(
 
       if (validatedData.decisionType === 'MITIGATE' && validatedData.selectedMeasures) {
         // Calculate priority based on tension severity
-        const severity = tension.calculatedSeverity || tension.baseSeverity || 3
+        const tensionData = tension as { calculatedSeverity?: number | null; baseSeverity?: number }
+        const severity = tensionData.calculatedSeverity || tensionData.baseSeverity || 3
 
         // Convert severity to priority
         let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM'
