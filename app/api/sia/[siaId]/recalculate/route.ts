@@ -93,12 +93,15 @@ export async function POST(
     }))
 
     // Calculate new scores
-    const vigilanceScores = calculateVigilanceScores(
+    const vigilanceScoresRaw = calculateVigilanceScores(
       siaData,
       edgesData,
       tensionsData,
       actionsData
     )
+
+    // Convert to JSON-compatible format for Prisma Json field
+    const vigilanceScores = JSON.parse(JSON.stringify(vigilanceScoresRaw))
 
     // Update SIA with new scores
     const updatedSia = await db.sia.update({
