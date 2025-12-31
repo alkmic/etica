@@ -50,17 +50,12 @@ export async function GET(
         },
         tensions: {
           include: {
-            edges: {
+            tensionEdges: {
               include: {
                 edge: true,
               },
             },
-            arbitrations: {
-              orderBy: {
-                createdAt: 'desc',
-              },
-              take: 1,
-            },
+            arbitration: true,
           },
         },
         actions: {

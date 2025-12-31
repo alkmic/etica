@@ -34,10 +34,7 @@ export async function POST(
         edges: true,
         tensions: {
           include: {
-            arbitrations: {
-              orderBy: { createdAt: 'desc' },
-              take: 1,
-            },
+            arbitration: true,
           },
         },
         actions: true,
@@ -71,11 +68,12 @@ export async function POST(
     const tensionsData = sia.tensions.map((tension: any) => ({
       id: tension.id,
       impactedDomains: tension.impactedDomains,
-      baseSeverity: tension.baseSeverity,
-      calculatedSeverity: tension.calculatedSeverity,
+      severity: tension.severity,
+      exposureScore: tension.exposureScore,
+      residualScore: tension.residualScore,
       status: tension.status,
-      hasArbitration: tension.arbitrations?.length > 0,
-      arbitrationDecision: tension.arbitrations?.[0]?.decisionType,
+      hasArbitration: !!tension.arbitration,
+      arbitrationDecision: tension.arbitration?.decisionType,
     }))
 
     const actionsData = sia.actions.map((action: any) => ({

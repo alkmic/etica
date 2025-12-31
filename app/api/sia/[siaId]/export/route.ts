@@ -41,12 +41,12 @@ export async function GET(
         },
         tensions: {
           include: {
-            edges: {
+            tensionEdges: {
               include: {
                 edge: true,
               },
             },
-            arbitrations: true,
+            arbitration: true,
             actions: true,
           },
         },
