@@ -211,15 +211,10 @@ export async function PUT(
             pattern: tension.patternId as any,
             description: tension.pattern.description,
             status: 'DETECTED' as any,
-            level: tension.level as any,
             impactedDomains: tension.impactedDomains,
-            baseSeverity: tension.baseSeverity,
-            calculatedSeverity: tension.calculatedSeverity,
-            triggerConditions: (tension.triggerConditions ?? undefined) as any,
-            activeAmplifiers: tension.activeAmplifiers,
-            activeMitigators: tension.activeMitigators,
-            relatedNodeIds: tension.relatedNodeIds,
-            detectionReason: tension.detectionReason,
+            severity: Number(tension.baseSeverity) || 0,
+            exposureScore: Number(tension.baseSeverity) || null,
+            residualScore: Number(tension.calculatedSeverity) || null,
             triggeredByRule: 'auto-detection',
             tensionEdges: {
               create: tension.relatedEdgeIds.map((edgeId: string) => ({
