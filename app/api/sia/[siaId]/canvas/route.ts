@@ -3,9 +3,8 @@ import { auth } from '@/lib/auth'
 
 import { db } from '@/lib/db'
 import { z } from 'zod'
-import { detectTensions, DetectedTension } from '@/lib/rules/detection-engine'
-import { TENSION_PATTERNS } from '@/lib/constants/tension-patterns'
-import { NodeType, FlowNature, FlowDirection, Sensitivity, AutomationLevel, Frequency, TensionPattern } from '@prisma/client'
+import { detectTensions } from '@/lib/rules/detection-engine'
+import { NodeType, FlowNature, FlowDirection, Sensitivity, AutomationLevel, Frequency, TensionPattern, Prisma } from '@prisma/client'
 
 // ============================================
 // VALIDATION SCHEMAS
@@ -103,10 +102,10 @@ export async function PUT(
             siaId,
             type: node.type,
             label: node.label,
-            attributes: node.attributes || {},
+            attributes: (node.attributes || {}) as Prisma.InputJsonValue,
             positionX: node.positionX,
             positionY: node.positionY,
-            style: node.style || null,
+            style: (node.style || null) as Prisma.InputJsonValue | null,
           })),
         })
       }
@@ -220,7 +219,7 @@ export async function PUT(
             impactedDomains: tension.impactedDomains,
             baseSeverity: tension.baseSeverity,
             calculatedSeverity: tension.calculatedSeverity,
-            triggerConditions: tension.triggerConditions,
+            triggerConditions: tension.triggerConditions as Prisma.InputJsonValue,
             activeAmplifiers: tension.activeAmplifiers,
             activeMitigators: tension.activeMitigators,
             relatedNodeIds: tension.relatedNodeIds,
