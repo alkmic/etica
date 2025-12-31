@@ -74,21 +74,22 @@ export async function POST(
 
     const tensionsData = sia.tensions.map((tension: any) => ({
       id: tension.id,
-      impactedDomains: tension.impactedDomains,
-      severity: tension.severity,
-      exposureScore: tension.exposureScore,
-      residualScore: tension.residualScore,
       status: tension.status,
-      hasArbitration: !!tension.arbitration,
-      arbitrationDecision: tension.arbitration?.decisionType,
+      impactedDomains: tension.impactedDomains || [],
+      severity: tension.severity ?? null,
+      probability: tension.probability ?? null,
+      scale: tension.scale ?? null,
+      vulnerability: tension.vulnerability ?? null,
+      irreversibility: tension.irreversibility ?? null,
+      detectability: tension.detectability ?? null,
+      exposureScore: tension.exposureScore ?? null,
     }))
 
     const actionsData = sia.actions.map((action: any) => ({
       id: action.id,
-      category: action.category,
       status: action.status,
-      priority: action.priority,
       tensionId: action.tensionId,
+      estimatedImpact: (action.estimatedImpact as Record<string, number> | null) ?? null,
     }))
 
     // Calculate new scores
