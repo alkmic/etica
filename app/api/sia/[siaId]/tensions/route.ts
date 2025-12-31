@@ -69,7 +69,7 @@ export async function GET(
     })
 
     // Enrich with pattern info
-    const enrichedTensions = tensions.map((tension) => {
+    const enrichedTensions = tensions.map((tension: any) => {
       const pattern = TENSION_PATTERNS[tension.pattern as TensionPatternId]
       return {
         ...tension,

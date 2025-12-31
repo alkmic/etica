@@ -6,13 +6,12 @@ import { db } from '@/lib/db'
 import type { NextAuthConfig } from 'next-auth'
 
 export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(db),
+  adapter: PrismaAdapter(db) as any,
   session: {
     strategy: 'jwt',
   },
   pages: {
     signIn: '/login',
-    signUp: '/register',
     error: '/login',
   },
   providers: [
@@ -57,8 +56,8 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.role = user.role
+        token.id = user.id as string
+        token.role = (user as any).role || 'user'
       }
       return token
     },

@@ -85,7 +85,7 @@ export async function PUT(
     const validatedData = canvasSchema.parse(body)
 
     // Use a transaction to update nodes and edges
-    await db.$transaction(async (tx) => {
+    await db.$transaction(async (tx: any) => {
       // Delete existing edges first (due to FK constraints)
       await tx.tensionEdge.deleteMany({
         where: { edge: { siaId } }
@@ -101,10 +101,10 @@ export async function PUT(
             siaId,
             type: node.type,
             label: node.label,
-            attributes: node.attributes ?? {},
+            attributes: (node.attributes ?? {}) as any,
             positionX: node.positionX,
             positionY: node.positionY,
-            style: node.style ?? null,
+            style: (node.style ?? null) as any,
           },
         })
       }
@@ -165,14 +165,14 @@ export async function PUT(
         populations: updatedSia.populations,
       }
 
-      const nodeContexts = updatedSia.nodes.map((node) => ({
+      const nodeContexts = updatedSia.nodes.map((node: any) => ({
         id: node.id,
         type: node.type as any,
         label: node.label,
         attributes: (node.attributes as Record<string, unknown>) || {},
       }))
 
-      const edgeContexts = updatedSia.edges.map((edge) => ({
+      const edgeContexts = updatedSia.edges.map((edge: any) => ({
         id: edge.id,
         sourceId: edge.sourceId,
         targetId: edge.targetId,
@@ -215,7 +215,7 @@ export async function PUT(
             impactedDomains: tension.impactedDomains,
             baseSeverity: tension.baseSeverity,
             calculatedSeverity: tension.calculatedSeverity,
-            triggerConditions: tension.triggerConditions ?? undefined,
+            triggerConditions: (tension.triggerConditions ?? undefined) as any,
             activeAmplifiers: tension.activeAmplifiers,
             activeMitigators: tension.activeMitigators,
             relatedNodeIds: tension.relatedNodeIds,

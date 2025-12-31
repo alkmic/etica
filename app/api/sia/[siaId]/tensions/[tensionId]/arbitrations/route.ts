@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 
 import { db } from '@/lib/db'
 import { z } from 'zod'
-import { ArbitrationDecision, TensionStatus, ActionCategory, Priority } from '@prisma/client'
+// Use string literals for Prisma enums to avoid import issues
 import { ACTION_TEMPLATES } from '@/lib/constants/action-templates'
 import { TENSION_PATTERNS, TensionPatternId } from '@/lib/constants/tension-patterns'
 
@@ -12,7 +12,7 @@ import { TENSION_PATTERNS, TensionPatternId } from '@/lib/constants/tension-patt
 // ============================================
 
 const arbitrationSchema = z.object({
-  decisionType: z.nativeEnum(ArbitrationDecision),
+  decisionType: z.enum(['MITIGATE', 'ACCEPT_RISK', 'REJECT']),
   justification: z.string().min(20, 'La justification doit faire au moins 20 caractères'),
 
   // Pour MITIGATE: mesures sélectionnées
@@ -126,7 +126,7 @@ export async function POST(
     }
 
     // Create arbitration and update tension status + generate actions
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: any) => {
       // Create the arbitration
       const arbitration = await tx.arbitration.create({
         data: {
@@ -150,7 +150,7 @@ export async function POST(
       })
 
       // Update tension status based on decision
-      let newStatus: TensionStatus = 'ARBITRATED'
+      let newStatus: 'DETECTED' | 'QUALIFIED' | 'IN_PROGRESS' | 'ARBITRATED' | 'RESOLVED' | 'DISMISSED' = 'ARBITRATED'
       if (validatedData.decisionType === 'REJECT') {
         newStatus = 'DISMISSED'
       } else if (validatedData.decisionType === 'MITIGATE') {
@@ -170,7 +170,7 @@ export async function POST(
         const severity = tension.calculatedSeverity || tension.baseSeverity || 3
 
         // Convert severity to priority
-        let priority: Priority = 'MEDIUM'
+        let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM'
         if (severity >= 5) priority = 'CRITICAL'
         else if (severity >= 4) priority = 'HIGH'
         else if (severity <= 2) priority = 'LOW'
@@ -185,7 +185,7 @@ export async function POST(
                 tensionId,
                 title: template.title,
                 description: template.description,
-                category: template.category as ActionCategory,
+                category: template.category as any,
                 priority,
                 effort: template.effort as any,
                 status: 'TODO',

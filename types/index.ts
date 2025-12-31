@@ -1,30 +1,154 @@
 // Types globaux ETICA
+// Note: Types manually defined to avoid Prisma client generation dependency
 
-import type {
-  User,
-  Sia,
-  Node,
-  Edge,
-  Tension,
-  Action,
-  Arbitration,
-  Evidence,
-  Comment,
-  Version,
-} from '@prisma/client'
+// Base types matching Prisma schema
+export interface User {
+  id: string
+  name: string | null
+  email: string
+  emailVerified: Date | null
+  image: string | null
+  role: string
+  createdAt: Date
+  updatedAt: Date
+}
 
-// Re-export des types Prisma
-export type {
-  User,
-  Sia,
-  Node,
-  Edge,
-  Tension,
-  Action,
-  Arbitration,
-  Evidence,
-  Comment,
-  Version,
+export interface Sia {
+  id: string
+  name: string
+  description: string | null
+  domain: string
+  dataTypes: string[]
+  decisionType: string
+  populations: string[]
+  hasVulnerable: boolean
+  scale: string
+  status: string
+  ownerId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Node {
+  id: string
+  siaId: string
+  type: string
+  label: string
+  attributes: Record<string, unknown>
+  positionX: number
+  positionY: number
+  style: Record<string, unknown> | null
+}
+
+export interface Edge {
+  id: string
+  siaId: string
+  sourceId: string
+  targetId: string
+  label: string | null
+  direction: string
+  nature: string
+  dataCategories: string[]
+  sensitivity: string
+  automation: string
+  frequency: string
+  legalBasis: string | null
+  agentivity: number | null
+  asymmetry: number | null
+  irreversibility: number | null
+  scalability: number | null
+  opacity: number | null
+}
+
+export interface Tension {
+  id: string
+  siaId: string
+  pattern: string
+  description: string
+  status: string
+  level: string
+  impactedDomains: string[]
+  baseSeverity: number
+  calculatedSeverity: number | null
+  triggerConditions: Record<string, unknown> | null
+  activeAmplifiers: string[]
+  activeMitigators: string[]
+  relatedNodeIds: string[]
+  detectionReason: string | null
+  triggeredByRule: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Action {
+  id: string
+  siaId: string
+  tensionId: string | null
+  title: string
+  description: string
+  category: string
+  priority: string
+  status: string
+  effort: string | null
+  dueDate: Date | null
+  assigneeId: string | null
+  templateId: string | null
+  sourceRule: string | null
+  estimatedImpact: string | null
+  checklist: string[] | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Arbitration {
+  id: string
+  tensionId: string
+  decisionType: string
+  justification: string
+  selectedMeasures: string[]
+  benefitAnalysis: string | null
+  riskAcceptance: string | null
+  rejectionReason: string | null
+  proportionality: string | null
+  contestability: string | null
+  revisionConditions: string | null
+  compensatoryMeasures: string | null
+  arbitratedById: string
+  arbitratedAt: Date
+  nextReviewDate: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Evidence {
+  id: string
+  actionId: string
+  title: string
+  type: string
+  url: string | null
+  content: string | null
+  uploadedById: string
+  createdAt: Date
+}
+
+export interface Comment {
+  id: string
+  tensionId: string
+  authorId: string
+  content: string
+  parentId: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Version {
+  id: string
+  siaId: string
+  version: number
+  changes: string
+  snapshot: Record<string, unknown>
+  createdById: string
+  createdAt: Date
 }
 
 // Types enrichis avec relations

@@ -50,7 +50,7 @@ export async function GET(_request: NextRequest) {
     })
 
     // Calculate vigilance scores for each SIA
-    const siasWithScores = sias.map((sia) => ({
+    const siasWithScores = sias.map((sia: any) => ({
       ...sia,
       stats: {
         nodes: sia._count.nodes,

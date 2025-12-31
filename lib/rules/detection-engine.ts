@@ -120,7 +120,7 @@ function hasVulnerablePopulation(sia: SiaContext, nodes: NodeContext[]): boolean
   if (sia.hasVulnerable) return true
   return nodes.some(n => {
     if (n.type !== 'HUMAN') return false
-    const attrs = n.attributes as HumanAttributes
+    const attrs = n.attributes as unknown as HumanAttributes
     return attrs?.isVulnerable || attrs?.isMinor
   })
 }
@@ -128,7 +128,7 @@ function hasVulnerablePopulation(sia: SiaContext, nodes: NodeContext[]): boolean
 function hasMinors(nodes: NodeContext[]): boolean {
   return nodes.some(n => {
     if (n.type !== 'HUMAN') return false
-    const attrs = n.attributes as HumanAttributes
+    const attrs = n.attributes as unknown as HumanAttributes
     return attrs?.isMinor
   })
 }
@@ -152,7 +152,7 @@ function hasHighIrreversibility(edges: EdgeContext[]): boolean {
 function hasBiasTests(nodes: NodeContext[]): boolean {
   return nodes.some(n => {
     if (n.type !== 'AI') return false
-    const attrs = n.attributes as AIAttributes
+    const attrs = n.attributes as unknown as AIAttributes
     return attrs?.hasBiasTests
   })
 }
@@ -160,7 +160,7 @@ function hasBiasTests(nodes: NodeContext[]): boolean {
 function hasHumanReview(nodes: NodeContext[]): boolean {
   return nodes.some(n => {
     if (n.type !== 'AI') return false
-    const attrs = n.attributes as AIAttributes
+    const attrs = n.attributes as unknown as AIAttributes
     return attrs?.hasHumanReview
   })
 }
@@ -168,7 +168,7 @@ function hasHumanReview(nodes: NodeContext[]): boolean {
 function hasExplainability(nodes: NodeContext[]): boolean {
   return nodes.some(n => {
     if (n.type !== 'AI') return false
-    const attrs = n.attributes as AIAttributes
+    const attrs = n.attributes as unknown as AIAttributes
     return attrs?.hasExplainability
   })
 }
@@ -177,7 +177,7 @@ function hasConsent(nodes: NodeContext[]): boolean {
   const humanNodes = getNodesByType(nodes, 'HUMAN')
   if (humanNodes.length === 0) return false
   return humanNodes.every(n => {
-    const attrs = n.attributes as HumanAttributes
+    const attrs = n.attributes as unknown as HumanAttributes
     return attrs?.hasConsent !== false
   })
 }
@@ -186,7 +186,7 @@ function canContest(nodes: NodeContext[]): boolean {
   const humanNodes = getNodesByType(nodes, 'HUMAN')
   if (humanNodes.length === 0) return false
   return humanNodes.some(n => {
-    const attrs = n.attributes as HumanAttributes
+    const attrs = n.attributes as unknown as HumanAttributes
     return attrs?.canContest
   })
 }
@@ -194,7 +194,7 @@ function canContest(nodes: NodeContext[]): boolean {
 function hasEncryption(nodes: NodeContext[]): boolean {
   return nodes.some(n => {
     if (n.type !== 'INFRA') return false
-    const attrs = n.attributes as InfraAttributes
+    const attrs = n.attributes as unknown as InfraAttributes
     return attrs?.isEncrypted
   })
 }
@@ -210,7 +210,7 @@ function hasDataMinimization(edges: EdgeContext[]): boolean {
 function hasScoringOrPrediction(nodes: NodeContext[]): boolean {
   return nodes.some(n => {
     if (n.type !== 'AI') return false
-    const attrs = n.attributes as AIAttributes
+    const attrs = n.attributes as unknown as AIAttributes
     return ['SCORING', 'PREDICTION', 'RISK_SCORING'].includes(attrs?.subtype || '')
   })
 }
@@ -294,7 +294,7 @@ const DETECTION_RULES: DetectionRule[] = [
 
       return {
         relatedEdgeIds: collectEdges.map(e => e.id),
-        relatedNodeIds: [...new Set(collectEdges.flatMap(e => [e.sourceId, e.targetId]))],
+        relatedNodeIds: Array.from(new Set(collectEdges.flatMap(e => [e.sourceId, e.targetId]))),
         triggerConditions: [{
           type: 'combination',
           description: 'Collecte de données sensibles dans un contexte de sécurité',
@@ -348,7 +348,7 @@ const DETECTION_RULES: DetectionRule[] = [
       if (opaqueEdges.length === 0) return null
 
       const aiNodes = getNodesByType(ctx.nodes, 'AI').filter(n => {
-        const attrs = n.attributes as AIAttributes
+        const attrs = n.attributes as unknown as AIAttributes
         return attrs?.complexityLevel === 'COMPLEX' || attrs?.complexityLevel === 'OPAQUE'
       })
 
@@ -518,7 +518,7 @@ const DETECTION_RULES: DetectionRule[] = [
     check: (ctx) => {
       const llmNodes = ctx.nodes.filter(n => {
         if (n.type !== 'AI') return false
-        const attrs = n.attributes as AIAttributes
+        const attrs = n.attributes as unknown as AIAttributes
         return attrs?.subtype === 'LLM_GENAI' || attrs?.autonomyLevel === 'AUTONOMOUS'
       })
 
@@ -583,7 +583,7 @@ const DETECTION_RULES: DetectionRule[] = [
 
       const hasHumanSupervisor = ctx.nodes.some(n => {
         if (n.type !== 'HUMAN') return false
-        const attrs = n.attributes as HumanAttributes
+        const attrs = n.attributes as unknown as HumanAttributes
         return attrs?.subtype === 'SUPERVISOR_HITL'
       })
 
@@ -675,7 +675,7 @@ const DETECTION_RULES: DetectionRule[] = [
     check: (ctx) => {
       const llmNodes = ctx.nodes.filter(n => {
         if (n.type !== 'AI') return false
-        const attrs = n.attributes as AIAttributes
+        const attrs = n.attributes as unknown as AIAttributes
         return attrs?.subtype === 'LLM_GENAI' || attrs?.subtype === 'DEEP_LEARNING'
       })
 
@@ -707,7 +707,7 @@ const DETECTION_RULES: DetectionRule[] = [
     check: (ctx) => {
       const storageNodes = ctx.nodes.filter(n => {
         if (n.type !== 'INFRA') return false
-        const attrs = n.attributes as InfraAttributes
+        const attrs = n.attributes as unknown as InfraAttributes
         return attrs?.retentionPolicy === 'MORE_THAN_5_YEARS' || attrs?.retentionPolicy === 'INDEFINITE'
       })
 

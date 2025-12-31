@@ -53,29 +53,32 @@ export async function POST(
 
     // Prepare data for scoring
     const siaData = {
+      id: sia.id,
+      domain: sia.domain,
       decisionType: sia.decisionType,
       dataTypes: sia.dataTypes,
       hasVulnerable: sia.hasVulnerable,
       scale: sia.scale,
     }
 
-    const edgesData = sia.edges.map((edge) => ({
+    const edgesData = sia.edges.map((edge: any) => ({
       id: edge.id,
-      dataTypes: edge.dataTypes,
-      domains: edge.domains,
+      dataCategories: edge.dataCategories,
+      sensitivity: edge.sensitivity,
+      nature: edge.nature,
     }))
 
-    const tensionsData = sia.tensions.map((tension) => ({
+    const tensionsData = sia.tensions.map((tension: any) => ({
       id: tension.id,
-      primaryDomain: tension.primaryDomain,
-      secondaryDomain: tension.secondaryDomain,
-      severity: tension.severity,
+      impactedDomains: tension.impactedDomains,
+      baseSeverity: tension.baseSeverity,
+      calculatedSeverity: tension.calculatedSeverity,
       status: tension.status,
-      hasArbitration: tension.arbitrations.length > 0,
-      arbitrationDecision: tension.arbitrations[0]?.decision,
+      hasArbitration: tension.arbitrations?.length > 0,
+      arbitrationDecision: tension.arbitrations?.[0]?.decisionType,
     }))
 
-    const actionsData = sia.actions.map((action) => ({
+    const actionsData = sia.actions.map((action: any) => ({
       id: action.id,
       category: action.category,
       status: action.status,

@@ -384,8 +384,8 @@ export function detectTensions(
         // Fusionner les edges et actions
         const merged: DetectedTension = {
           ...tension,
-          relatedEdgeIds: [...new Set([...existing.relatedEdgeIds, ...tension.relatedEdgeIds])],
-          suggestedActions: [...new Set([...existing.suggestedActions, ...tension.suggestedActions])],
+          relatedEdgeIds: Array.from(new Set([...existing.relatedEdgeIds, ...tension.relatedEdgeIds])),
+          suggestedActions: Array.from(new Set([...existing.suggestedActions, ...tension.suggestedActions])),
         }
         byPattern.set(tension.pattern, merged)
       }
