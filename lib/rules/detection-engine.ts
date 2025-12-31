@@ -104,10 +104,6 @@ function getNodesByType(nodes: NodeContext[], type: NodeTypeId): NodeContext[] {
   return nodes.filter(n => n.type === type)
 }
 
-function _getEdgesByNature(edges: EdgeContext[], nature: FlowNatureId): EdgeContext[] {
-  return edges.filter(e => e.nature === nature)
-}
-
 function getEdgesWithDecision(edges: EdgeContext[]): EdgeContext[] {
   return edges.filter(e => ['DECISION', 'SCORING', 'RISK_SCORING'].includes(e.nature))
 }
@@ -209,14 +205,6 @@ function hasDataMinimization(edges: EdgeContext[]): boolean {
   const allCategories = new Set<string>()
   collectEdges.forEach(e => e.dataCategories.forEach(c => allCategories.add(c)))
   return allCategories.size <= 3
-}
-
-function _hasLLMOrGenAI(nodes: NodeContext[]): boolean {
-  return nodes.some(n => {
-    if (n.type !== 'AI') return false
-    const attrs = n.attributes as AIAttributes
-    return attrs?.subtype === 'LLM_GENAI'
-  })
 }
 
 function hasScoringOrPrediction(nodes: NodeContext[]): boolean {

@@ -10,8 +10,6 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Undo2,
-  Redo2,
   Save,
   Trash2,
 } from 'lucide-react'

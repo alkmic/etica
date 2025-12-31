@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -22,7 +22,7 @@ export async function GET(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -98,7 +98,7 @@ export async function PUT(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -154,7 +154,7 @@ export async function DELETE(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
