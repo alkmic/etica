@@ -65,6 +65,12 @@ export async function GET(
       )
     }
 
+    // Normalize nullable fields for export functions
+    const siaForExport = {
+      ...sia,
+      description: sia.description ?? '',
+    } as any
+
     switch (format) {
       case 'json':
         return new NextResponse(JSON.stringify(sia, null, 2), {
@@ -75,7 +81,7 @@ export async function GET(
         })
 
       case 'csv':
-        const csv = generateCsv(sia)
+        const csv = generateCsv(siaForExport)
         return new NextResponse(csv, {
           headers: {
             'Content-Type': 'text/csv; charset=utf-8',
@@ -86,7 +92,7 @@ export async function GET(
       case 'pdf':
         // For PDF, we return a simple HTML that can be converted to PDF client-side
         // In production, you'd use a library like @react-pdf/renderer or puppeteer
-        const html = generatePdfHtml(sia)
+        const html = generatePdfHtml(siaForExport)
         return new NextResponse(html, {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
