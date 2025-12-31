@@ -60,9 +60,16 @@ export async function POST(
 
     const edgesData = sia.edges.map((edge: any) => ({
       id: edge.id,
-      dataCategories: edge.dataCategories,
+      dataCategories: edge.dataCategories || [],
       sensitivity: edge.sensitivity,
       nature: edge.nature,
+      automation: edge.automation,
+      direction: edge.direction,
+      agentivity: edge.agentivity ?? null,
+      asymmetry: edge.asymmetry ?? null,
+      irreversibility: edge.irreversibility ?? null,
+      scalability: edge.scalability ?? null,
+      opacity: edge.opacity ?? null,
     }))
 
     const tensionsData = sia.tensions.map((tension: any) => ({
