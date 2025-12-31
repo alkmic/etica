@@ -102,10 +102,10 @@ export async function PUT(
             siaId,
             type: node.type,
             label: node.label,
-            attributes: (node.attributes || {}) as Prisma.InputJsonValue,
+            attributes: (node.attributes ?? {}) as Prisma.InputJsonValue,
             positionX: node.positionX,
             positionY: node.positionY,
-            style: (node.style || null) as Prisma.InputJsonValue | null,
+            style: node.style ? (node.style as Prisma.InputJsonValue) : Prisma.DbNull,
           })),
         })
       }
