@@ -39,7 +39,7 @@ export async function GET(
 
     const versions = await db.version.findMany({
       where: { siaId },
-      orderBy: { version: 'desc' },
+      orderBy: { number: 'desc' },
     })
 
     return NextResponse.json(versions)
@@ -108,10 +108,10 @@ export async function POST(
     // Get the latest version number
     const latestVersion = await db.version.findFirst({
       where: { siaId },
-      orderBy: { version: 'desc' },
+      orderBy: { number: 'desc' },
     })
 
-    const newVersionNumber = (latestVersion?.version || 0) + 1
+    const newVersionNumber = (latestVersion?.number || 0) + 1
 
     // Create snapshot
     const snapshot = {
@@ -133,9 +133,9 @@ export async function POST(
     const version = await db.version.create({
       data: {
         siaId,
-        version: newVersionNumber,
+        number: newVersionNumber,
         snapshot,
-        createdBy: session.user.id,
+        createdById: session.user.id,
       },
     })
 

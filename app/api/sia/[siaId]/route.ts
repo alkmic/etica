@@ -66,7 +66,7 @@ export async function GET(
         },
         versions: {
           orderBy: {
-            version: 'desc',
+            number: 'desc',
           },
           take: 5,
         },
