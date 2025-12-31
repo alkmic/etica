@@ -208,10 +208,10 @@ export async function PUT(
         await db.tension.create({
           data: {
             siaId,
-            pattern: tension.patternId,
+            pattern: tension.patternId as any,
             description: tension.pattern.description,
-            status: 'DETECTED',
-            level: tension.level,
+            status: 'DETECTED' as any,
+            level: tension.level as any,
             impactedDomains: tension.impactedDomains,
             baseSeverity: tension.baseSeverity,
             calculatedSeverity: tension.calculatedSeverity,
