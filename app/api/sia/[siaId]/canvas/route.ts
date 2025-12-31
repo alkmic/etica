@@ -4,7 +4,6 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { detectTensions } from '@/lib/rules/detection-engine'
-import { NodeType, FlowNature, FlowDirection, Sensitivity, AutomationLevel, Frequency, TensionPattern, Prisma } from '@prisma/client'
 
 // ============================================
 // VALIDATION SCHEMAS
@@ -12,7 +11,7 @@ import { NodeType, FlowNature, FlowDirection, Sensitivity, AutomationLevel, Freq
 
 const nodeSchema = z.object({
   id: z.string(),
-  type: z.nativeEnum(NodeType),
+  type: z.enum(['HUMAN', 'AI', 'INFRA', 'ORG']),
   label: z.string(),
   attributes: z.record(z.unknown()).optional().default({}),
   positionX: z.number(),
@@ -25,12 +24,12 @@ const edgeSchema = z.object({
   sourceId: z.string(),
   targetId: z.string(),
   label: z.string().optional().nullable(),
-  direction: z.nativeEnum(FlowDirection),
-  nature: z.nativeEnum(FlowNature),
+  direction: z.enum(['H2M', 'M2M', 'M2H', 'H2H']),
+  nature: z.enum(['COLLECTION', 'STORAGE', 'PROCESSING', 'INFERENCE', 'DECISION', 'SCORING', 'RECOMMENDATION', 'PERSONALIZATION', 'NOTIFICATION', 'TRANSFER', 'MONITORING', 'MODERATION', 'PREDICTION', 'RISK_SCORING', 'PROFILING', 'LEARNING', 'CONTROL', 'ENRICHMENT']),
   dataCategories: z.array(z.string()).optional().default([]),
-  sensitivity: z.nativeEnum(Sensitivity).optional().default('STANDARD'),
-  automation: z.nativeEnum(AutomationLevel).optional().default('INFORMATIVE'),
-  frequency: z.nativeEnum(Frequency).optional().default('ON_DEMAND'),
+  sensitivity: z.enum(['STANDARD', 'SENSITIVE', 'HIGHLY_SENSITIVE']).optional().default('STANDARD'),
+  automation: z.enum(['INFORMATIVE', 'ASSISTED', 'SEMI_AUTO', 'AUTO_WITH_RECOURSE', 'AUTO_NO_RECOURSE']).optional().default('INFORMATIVE'),
+  frequency: z.enum(['REALTIME', 'HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ON_DEMAND', 'ONE_TIME']).optional().default('ON_DEMAND'),
   legalBasis: z.string().optional().nullable(),
   // Profil éthique
   agentivity: z.number().min(1).max(5).optional().nullable(),
@@ -94,44 +93,44 @@ export async function PUT(
       await tx.edge.deleteMany({ where: { siaId } })
       await tx.node.deleteMany({ where: { siaId } })
 
-      // Create new nodes
-      if (validatedData.nodes.length > 0) {
-        await tx.node.createMany({
-          data: validatedData.nodes.map((node) => ({
+      // Create new nodes - use individual creates to avoid JSON type issues with createMany
+      for (const node of validatedData.nodes) {
+        await tx.node.create({
+          data: {
             id: node.id,
             siaId,
             type: node.type,
             label: node.label,
-            attributes: (node.attributes ?? {}) as Prisma.InputJsonValue,
+            attributes: node.attributes ?? {},
             positionX: node.positionX,
             positionY: node.positionY,
-            style: node.style ? (node.style as Prisma.InputJsonValue) : Prisma.DbNull,
-          })),
+            style: node.style ?? null,
+          },
         })
       }
 
-      // Create new edges
-      if (validatedData.edges.length > 0) {
-        await tx.edge.createMany({
-          data: validatedData.edges.map((edge) => ({
+      // Create new edges - use individual creates to avoid JSON type issues with createMany
+      for (const edge of validatedData.edges) {
+        await tx.edge.create({
+          data: {
             id: edge.id,
             siaId,
             sourceId: edge.sourceId,
             targetId: edge.targetId,
-            label: edge.label || null,
+            label: edge.label ?? null,
             direction: edge.direction,
             nature: edge.nature,
             dataCategories: edge.dataCategories,
             sensitivity: edge.sensitivity,
             automation: edge.automation,
             frequency: edge.frequency,
-            legalBasis: edge.legalBasis as any || null,
-            agentivity: edge.agentivity,
-            asymmetry: edge.asymmetry,
-            irreversibility: edge.irreversibility,
-            scalability: edge.scalability,
-            opacity: edge.opacity,
-          })),
+            legalBasis: edge.legalBasis ?? null,
+            agentivity: edge.agentivity ?? null,
+            asymmetry: edge.asymmetry ?? null,
+            irreversibility: edge.irreversibility ?? null,
+            scalability: edge.scalability ?? null,
+            opacity: edge.opacity ?? null,
+          },
         })
       }
 
@@ -206,27 +205,24 @@ export async function PUT(
 
       // Create new tensions
       for (const tension of detectedTensions) {
-        // Map pattern ID to Prisma enum
-        const patternEnum = tension.patternId as TensionPattern
-
         await db.tension.create({
           data: {
             siaId,
-            pattern: patternEnum,
+            pattern: tension.patternId,
             description: tension.pattern.description,
             status: 'DETECTED',
-            level: tension.level as any,
+            level: tension.level,
             impactedDomains: tension.impactedDomains,
             baseSeverity: tension.baseSeverity,
             calculatedSeverity: tension.calculatedSeverity,
-            triggerConditions: tension.triggerConditions as Prisma.InputJsonValue,
+            triggerConditions: tension.triggerConditions ?? undefined,
             activeAmplifiers: tension.activeAmplifiers,
             activeMitigators: tension.activeMitigators,
             relatedNodeIds: tension.relatedNodeIds,
             detectionReason: tension.detectionReason,
             triggeredByRule: 'auto-detection',
             tensionEdges: {
-              create: tension.relatedEdgeIds.map((edgeId) => ({
+              create: tension.relatedEdgeIds.map((edgeId: string) => ({
                 edgeId,
               })),
             },
