@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 import { calculateVigilanceScores } from '@/lib/scoring/vigilance'
 
@@ -10,7 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -21,20 +21,20 @@ export async function POST(
     }
 
     // Get full SIA with all related data
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
       include: {
         nodes: true,
         edges: true,
         tensions: {
           include: {
-            arbitrations: {
-              orderBy: { createdAt: 'desc' },
-              take: 1,
-            },
+            arbitration: true,
           },
         },
         actions: true,
@@ -50,43 +50,58 @@ export async function POST(
 
     // Prepare data for scoring
     const siaData = {
+      id: sia.id,
+      domain: sia.domain,
       decisionType: sia.decisionType,
       dataTypes: sia.dataTypes,
       hasVulnerable: sia.hasVulnerable,
       scale: sia.scale,
     }
 
-    const edgesData = sia.edges.map((edge) => ({
+    const edgesData = sia.edges.map((edge: any) => ({
       id: edge.id,
-      dataTypes: edge.dataTypes,
-      domains: edge.domains,
+      dataCategories: edge.dataCategories || [],
+      sensitivity: edge.sensitivity,
+      nature: edge.nature,
+      automation: edge.automation,
+      direction: edge.direction,
+      agentivity: edge.agentivity ?? null,
+      asymmetry: edge.asymmetry ?? null,
+      irreversibility: edge.irreversibility ?? null,
+      scalability: edge.scalability ?? null,
+      opacity: edge.opacity ?? null,
     }))
 
-    const tensionsData = sia.tensions.map((tension) => ({
+    const tensionsData = sia.tensions.map((tension: any) => ({
       id: tension.id,
-      primaryDomain: tension.primaryDomain,
-      secondaryDomain: tension.secondaryDomain,
-      severity: tension.severity,
       status: tension.status,
-      hasArbitration: tension.arbitrations.length > 0,
-      arbitrationDecision: tension.arbitrations[0]?.decision,
+      impactedDomains: tension.impactedDomains || [],
+      severity: tension.severity ?? null,
+      probability: tension.probability ?? null,
+      scale: tension.scale ?? null,
+      vulnerability: tension.vulnerability ?? null,
+      irreversibility: tension.irreversibility ?? null,
+      detectability: tension.detectability ?? null,
+      exposureScore: tension.exposureScore ?? null,
     }))
 
-    const actionsData = sia.actions.map((action) => ({
+    const actionsData = sia.actions.map((action: any) => ({
       id: action.id,
-      category: action.category,
       status: action.status,
-      priority: action.priority,
       tensionId: action.tensionId,
+      estimatedImpact: (action.estimatedImpact as Record<string, number> | null) ?? null,
     }))
 
     // Calculate new scores
-    const vigilanceScores = calculateVigilanceScores(
+    const vigilanceScoresRaw = calculateVigilanceScores(
       siaData,
       edgesData,
       tensionsData,
       actionsData
     )
+
+    // Convert to JSON-compatible format for Prisma Json field
+    const vigilanceScores = JSON.parse(JSON.stringify(vigilanceScoresRaw))
 
     // Update SIA with new scores
     const updatedSia = await db.sia.update({

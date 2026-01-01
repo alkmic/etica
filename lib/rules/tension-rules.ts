@@ -207,7 +207,7 @@ const DETECTION_RULES: DetectionRule[] = [
     pattern: 'STANDARDIZATION_VS_SINGULARITY',
     name: 'Décision uniforme à grande échelle',
     description: 'Décision automatique appliquée uniformément à une large population.',
-    condition: (sia, _nodes, edges) => {
+    condition: (sia, _nodes, _edges) => {
       const isLargeScale = sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE'
       const hasAutoDecision = sia.decisionType === 'AUTO_DECISION'
       return isLargeScale && hasAutoDecision
@@ -384,8 +384,8 @@ export function detectTensions(
         // Fusionner les edges et actions
         const merged: DetectedTension = {
           ...tension,
-          relatedEdgeIds: [...new Set([...existing.relatedEdgeIds, ...tension.relatedEdgeIds])],
-          suggestedActions: [...new Set([...existing.suggestedActions, ...tension.suggestedActions])],
+          relatedEdgeIds: Array.from(new Set([...existing.relatedEdgeIds, ...tension.relatedEdgeIds])),
+          suggestedActions: Array.from(new Set([...existing.suggestedActions, ...tension.suggestedActions])),
         }
         byPattern.set(tension.pattern, merged)
       }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ siaId: string; actionId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId, actionId } = await params
 
     if (!session?.user?.id) {
@@ -20,11 +20,14 @@ export async function GET(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -66,7 +69,7 @@ export async function GET(
 const updateActionSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().optional(),
-  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'CANCELLED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
   category: z
     .enum([
@@ -81,7 +84,7 @@ const updateActionSchema = z.object({
     ])
     .optional(),
   dueDate: z.string().nullable().optional(),
-  assignee: z.string().nullable().optional(),
+  assigneeId: z.string().nullable().optional(),
 })
 
 // PUT /api/sia/[siaId]/actions/[actionId] - Update an action
@@ -90,7 +93,7 @@ export async function PUT(
   { params }: { params: Promise<{ siaId: string; actionId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId, actionId } = await params
 
     if (!session?.user?.id) {
@@ -100,11 +103,14 @@ export async function PUT(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -155,7 +161,7 @@ export async function DELETE(
   { params }: { params: Promise<{ siaId: string; actionId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId, actionId } = await params
 
     if (!session?.user?.id) {
@@ -165,11 +171,14 @@ export async function DELETE(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 

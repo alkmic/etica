@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
 const updateSiaSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
-  domain: z.string().optional(),
+  domain: z.enum(['HEALTH', 'FINANCE', 'HR', 'COMMERCE', 'JUSTICE', 'ADMINISTRATION', 'EDUCATION', 'TRANSPORT', 'SECURITY', 'MARKETING', 'OTHER']).optional(),
   dataTypes: z.array(z.string()).optional(),
   decisionType: z.enum(['INFORMATIVE', 'RECOMMENDATION', 'ASSISTED_DECISION', 'AUTO_DECISION']).optional(),
   populations: z.array(z.string()).optional(),
   hasVulnerable: z.boolean().optional(),
-  scale: z.enum(['LOCAL', 'REGIONAL', 'NATIONAL', 'INTERNATIONAL']).optional(),
-  status: z.enum(['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED']).optional(),
+  scale: z.enum(['TINY', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE']).optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'REVIEW', 'ARCHIVED']).optional(),
 })
 
 // GET /api/sia/[siaId] - Get a specific SIA with all details
@@ -22,7 +22,7 @@ export async function GET(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -32,32 +32,30 @@ export async function GET(
       )
     }
 
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
       include: {
         nodes: true,
         edges: {
           include: {
-            sourceNode: true,
-            targetNode: true,
+            source: true,
+            target: true,
           },
         },
         tensions: {
           include: {
-            edges: {
+            tensionEdges: {
               include: {
                 edge: true,
               },
             },
-            arbitrations: {
-              orderBy: {
-                createdAt: 'desc',
-              },
-              take: 1,
-            },
+            arbitration: true,
           },
         },
         actions: {
@@ -68,7 +66,7 @@ export async function GET(
         },
         versions: {
           orderBy: {
-            version: 'desc',
+            number: 'desc',
           },
           take: 5,
         },
@@ -98,7 +96,7 @@ export async function PUT(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -108,11 +106,14 @@ export async function PUT(
       )
     }
 
-    // Check ownership
-    const existingSia = await db.sia.findUnique({
+    // Check ownership or membership
+    const existingSia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -154,7 +155,7 @@ export async function DELETE(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -164,11 +165,14 @@ export async function DELETE(
       )
     }
 
-    // Check ownership
-    const existingSia = await db.sia.findUnique({
+    // Check ownership or membership
+    const existingSia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 

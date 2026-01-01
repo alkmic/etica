@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { TENSION_PATTERNS, TensionPatternId } from '@/lib/constants/tension-patterns'
+import { ACTION_TEMPLATES } from '@/lib/constants/action-templates'
 
 // GET /api/sia/[siaId]/tensions/[tensionId] - Get a specific tension
 export async function GET(
@@ -10,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ siaId: string; tensionId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId, tensionId } = await params
 
     if (!session?.user?.id) {
@@ -20,11 +22,14 @@ export async function GET(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -41,19 +46,17 @@ export async function GET(
         siaId,
       },
       include: {
-        edges: {
+        tensionEdges: {
           include: {
             edge: {
               include: {
-                sourceNode: true,
-                targetNode: true,
+                source: true,
+                target: true,
               },
             },
           },
         },
-        arbitrations: {
-          orderBy: { createdAt: 'desc' },
-        },
+        arbitration: true,
         actions: {
           orderBy: { priority: 'desc' },
         },
@@ -67,7 +70,31 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(tension)
+    // Enrich with pattern info
+    const pattern = TENSION_PATTERNS[tension.pattern as TensionPatternId]
+
+    // Get suggested measures from pattern
+    const suggestedMeasures = (pattern?.defaultActions || []).map((actionId) => {
+      const template = ACTION_TEMPLATES[actionId]
+      return template ? {
+        id: actionId,
+        title: template.title,
+        description: template.description,
+        category: template.category,
+        effort: template.effort,
+      } : null
+    }).filter(Boolean)
+
+    return NextResponse.json({
+      ...tension,
+      patternTitle: pattern?.title || tension.pattern,
+      patternDescription: pattern?.description || tension.description,
+      poles: pattern?.poles || [],
+      arbitrationQuestions: pattern?.arbitrationQuestions || [],
+      suggestedMeasures,
+      amplifiers: pattern?.amplifiers || [],
+      mitigators: pattern?.mitigators || [],
+    })
   } catch (error) {
     console.error('Error fetching tension:', error)
     return NextResponse.json(
@@ -78,8 +105,14 @@ export async function GET(
 }
 
 const updateTensionSchema = z.object({
-  status: z.enum(['ACTIVE', 'OPEN', 'RESOLVED', 'ACCEPTED', 'MITIGATED']).optional(),
-  severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+  status: z.nativeEnum({
+    DETECTED: 'DETECTED',
+    QUALIFIED: 'QUALIFIED',
+    IN_PROGRESS: 'IN_PROGRESS',
+    ARBITRATED: 'ARBITRATED',
+    RESOLVED: 'RESOLVED',
+    DISMISSED: 'DISMISSED',
+  } as const).optional(),
   description: z.string().optional(),
 })
 
@@ -89,7 +122,7 @@ export async function PUT(
   { params }: { params: Promise<{ siaId: string; tensionId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId, tensionId } = await params
 
     if (!session?.user?.id) {
@@ -99,11 +132,14 @@ export async function PUT(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 

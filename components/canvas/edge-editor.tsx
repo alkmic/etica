@@ -106,28 +106,19 @@ export function EdgeEditor({
           <div className="space-y-2">
             <Label>Types de données transférées</Label>
             <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
-              {Object.entries(DATA_TYPES).map(([categoryKey, category]) => (
-                <div key={categoryKey} className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    {category.label}
-                  </p>
-                  <div className="space-y-1 pl-2">
-                    {category.types.map((dt) => (
-                      <div key={dt.id} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`edge-${dt.id}`}
-                          checked={dataTypes.includes(dt.id)}
-                          onCheckedChange={() => toggleDataType(dt.id)}
-                        />
-                        <label
-                          htmlFor={`edge-${dt.id}`}
-                          className="text-sm cursor-pointer flex-1"
-                        >
-                          {dt.label}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+              {Object.entries(DATA_TYPES).map(([key, dataType]) => (
+                <div key={key} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`edge-${dataType.id}`}
+                    checked={dataTypes.includes(dataType.id)}
+                    onCheckedChange={() => toggleDataType(dataType.id)}
+                  />
+                  <label
+                    htmlFor={`edge-${dataType.id}`}
+                    className="text-sm cursor-pointer flex-1"
+                  >
+                    {dataType.label}
+                  </label>
                 </div>
               ))}
             </div>

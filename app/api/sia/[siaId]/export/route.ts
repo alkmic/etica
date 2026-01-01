@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 import { DOMAINS } from '@/lib/constants/domains'
 
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
     const { searchParams } = new URL(request.url)
     const format = searchParams.get('format') || 'json'
@@ -23,27 +23,30 @@ export async function GET(
     }
 
     // Get full SIA with all related data
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
       include: {
         nodes: true,
         edges: {
           include: {
-            sourceNode: true,
-            targetNode: true,
+            source: true,
+            target: true,
           },
         },
         tensions: {
           include: {
-            edges: {
+            tensionEdges: {
               include: {
                 edge: true,
               },
             },
-            arbitrations: true,
+            arbitration: true,
             actions: true,
           },
         },
@@ -62,6 +65,12 @@ export async function GET(
       )
     }
 
+    // Normalize nullable fields for export functions
+    const siaForExport = {
+      ...sia,
+      description: sia.description ?? '',
+    } as any
+
     switch (format) {
       case 'json':
         return new NextResponse(JSON.stringify(sia, null, 2), {
@@ -72,7 +81,7 @@ export async function GET(
         })
 
       case 'csv':
-        const csv = generateCsv(sia)
+        const csv = generateCsv(siaForExport)
         return new NextResponse(csv, {
           headers: {
             'Content-Type': 'text/csv; charset=utf-8',
@@ -83,7 +92,7 @@ export async function GET(
       case 'pdf':
         // For PDF, we return a simple HTML that can be converted to PDF client-side
         // In production, you'd use a library like @react-pdf/renderer or puppeteer
-        const html = generatePdfHtml(sia)
+        const html = generatePdfHtml(siaForExport)
         return new NextResponse(html, {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
@@ -126,10 +135,10 @@ interface SiaExport {
   }>
   edges: Array<{
     id: string
-    sourceNode: { label: string }
-    targetNode: { label: string }
-    dataTypes: string[]
-    domains: string[]
+    source: { label: string }
+    target: { label: string }
+    dataCategories: string[]
+    nature: string
   }>
   tensions: Array<{
     id: string

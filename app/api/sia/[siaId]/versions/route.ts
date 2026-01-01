@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 
 // GET /api/sia/[siaId]/versions - List all versions for a SIA
@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -19,11 +19,14 @@ export async function GET(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -36,7 +39,7 @@ export async function GET(
 
     const versions = await db.version.findMany({
       where: { siaId },
-      orderBy: { version: 'desc' },
+      orderBy: { number: 'desc' },
     })
 
     return NextResponse.json(versions)
@@ -55,7 +58,7 @@ export async function POST(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -66,18 +69,25 @@ export async function POST(
     }
 
     // Get full SIA with all related data
-    const sia = await db.sia.findUnique({
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
       include: {
         nodes: true,
         edges: true,
         tensions: {
           include: {
-            edges: true,
-            arbitrations: true,
+            tensionEdges: {
+              include: {
+                edge: true,
+              },
+            },
+            arbitration: true,
           },
         },
         actions: {
@@ -98,10 +108,10 @@ export async function POST(
     // Get the latest version number
     const latestVersion = await db.version.findFirst({
       where: { siaId },
-      orderBy: { version: 'desc' },
+      orderBy: { number: 'desc' },
     })
 
-    const newVersionNumber = (latestVersion?.version || 0) + 1
+    const newVersionNumber = (latestVersion?.number || 0) + 1
 
     // Create snapshot
     const snapshot = {
@@ -123,9 +133,9 @@ export async function POST(
     const version = await db.version.create({
       data: {
         siaId,
-        version: newVersionNumber,
+        number: newVersionNumber,
         snapshot,
-        createdBy: session.user.id,
+        createdById: session.user.id,
       },
     })
 

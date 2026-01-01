@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -20,11 +20,14 @@ export async function GET(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -42,8 +45,8 @@ export async function GET(
           select: {
             id: true,
             description: true,
-            primaryDomain: true,
-            secondaryDomain: true,
+            pattern: true,
+            impactedDomains: true,
           },
         },
         evidences: {
@@ -88,7 +91,7 @@ const createActionSchema = z.object({
     ])
     .default('TECHNICAL'),
   dueDate: z.string().optional(),
-  assignee: z.string().optional(),
+  assigneeId: z.string().optional(),
   tensionId: z.string().optional(),
 })
 
@@ -98,7 +101,7 @@ export async function POST(
   { params }: { params: Promise<{ siaId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const { siaId } = await params
 
     if (!session?.user?.id) {
@@ -108,11 +111,14 @@ export async function POST(
       )
     }
 
-    // Check ownership
-    const sia = await db.sia.findUnique({
+    // Check ownership or membership
+    const sia = await db.sia.findFirst({
       where: {
         id: siaId,
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
     })
 
@@ -133,9 +139,9 @@ export async function POST(
         description: validatedData.description || '',
         priority: validatedData.priority,
         category: validatedData.category,
-        status: 'PENDING',
+        status: 'TODO',
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        assignee: validatedData.assignee || null,
+        assigneeId: validatedData.assigneeId || null,
         tensionId: validatedData.tensionId || null,
       },
       include: {
@@ -143,8 +149,8 @@ export async function POST(
           select: {
             id: true,
             description: true,
-            primaryDomain: true,
-            secondaryDomain: true,
+            pattern: true,
+            impactedDomains: true,
           },
         },
         evidences: true,

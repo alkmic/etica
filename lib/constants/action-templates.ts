@@ -11,6 +11,7 @@ export interface ActionTemplate {
   effort: Effort
   impactDomains: DomainId[]
   checklist: string[]
+  estimatedImpact?: string | null
 }
 
 export type ActionCategory =

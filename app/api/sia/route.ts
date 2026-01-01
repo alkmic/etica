@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
+
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
 const createSiaSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(100),
   description: z.string().optional(),
-  domain: z.string().optional(),
+  domain: z.enum(['HEALTH', 'FINANCE', 'HR', 'COMMERCE', 'JUSTICE', 'ADMINISTRATION', 'EDUCATION', 'TRANSPORT', 'SECURITY', 'MARKETING', 'OTHER']).default('OTHER'),
   dataTypes: z.array(z.string()).optional(),
   decisionType: z.enum(['INFORMATIVE', 'RECOMMENDATION', 'ASSISTED_DECISION', 'AUTO_DECISION']).optional(),
   populations: z.array(z.string()).optional(),
   hasVulnerable: z.boolean().optional(),
-  scale: z.enum(['LOCAL', 'REGIONAL', 'NATIONAL', 'INTERNATIONAL']).optional(),
+  scale: z.enum(['TINY', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE']).optional(),
 })
 
 // GET /api/sia - List all SIAs for the current user
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -29,7 +29,10 @@ export async function GET(request: NextRequest) {
 
     const sias = await db.sia.findMany({
       where: {
-        userId: session.user.id,
+        OR: [
+          { ownerId: session.user.id },
+          { members: { some: { userId: session.user.id } } }
+        ]
       },
       include: {
         _count: {
@@ -47,7 +50,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate vigilance scores for each SIA
-    const siasWithScores = sias.map((sia) => ({
+    const siasWithScores = sias.map((sia: any) => ({
       ...sia,
       stats: {
         nodes: sia._count.nodes,
@@ -70,7 +73,7 @@ export async function GET(request: NextRequest) {
 // POST /api/sia - Create a new SIA
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -91,9 +94,9 @@ export async function POST(request: NextRequest) {
         decisionType: validatedData.decisionType || 'INFORMATIVE',
         populations: validatedData.populations || [],
         hasVulnerable: validatedData.hasVulnerable || false,
-        scale: validatedData.scale || 'LOCAL',
+        scale: validatedData.scale || 'SMALL',
         status: 'DRAFT',
-        userId: session.user.id,
+        ownerId: session.user.id,
         vigilanceScores: {
           global: 0,
           domains: {

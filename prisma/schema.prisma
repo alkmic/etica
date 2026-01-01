@@ -282,16 +282,24 @@ enum FlowDirection {
 }
 
 enum FlowNature {
-  COLLECT         // Collecte de données
+  COLLECTION      // Collecte de données
+  STORAGE         // Conservation des données
+  PROCESSING      // Traitement ou transformation
   INFERENCE       // Inférence/prédiction
-  ENRICHMENT      // Enrichissement
   DECISION        // Prise de décision
+  SCORING         // Attribution d'un score
   RECOMMENDATION  // Recommandation
+  PERSONALIZATION // Personnalisation
   NOTIFICATION    // Notification
+  TRANSFER        // Transmission à un tiers
+  MONITORING      // Surveillance continue
+  MODERATION      // Filtrage ou modération
+  PREDICTION      // Anticipation comportement/événement
+  RISK_SCORING    // Évaluation de risque
+  PROFILING       // Création de profil
   LEARNING        // Apprentissage du modèle
   CONTROL         // Contrôle/supervision
-  TRANSFER        // Transfert simple
-  STORAGE         // Stockage
+  ENRICHMENT      // Enrichissement de données
 }
 
 enum Sensitivity {
@@ -341,12 +349,24 @@ model Tension {
   customTitle String?         // Si pattern = OTHER
   description String          @db.Text
   status      TensionStatus   @default(DETECTED)
+  level       TensionLevel    @default(INDIVIDUAL)
 
   // Domaines de vigilance impactés
   impactedDomains String[]
 
-  // Qualification (1-5 chacun)
-  severity        Int?  // Gravité de l'atteinte
+  // Sévérité calculée (1-5)
+  baseSeverity      Int       @default(3)  // Sévérité de base du pattern
+  calculatedSeverity Int?      // Sévérité finale après amplificateurs/mitigateurs
+
+  // Détection automatique
+  triggerConditions  Json?    // Conditions qui ont déclenché la détection
+  activeAmplifiers   String[] // IDs des amplificateurs actifs
+  activeMitigators   String[] // IDs des mitigateurs actifs
+  relatedNodeIds     String[] // Nœuds concernés par cette tension
+  detectionReason    String?  @db.Text // Explication lisible de la détection
+
+  // Qualification (1-5 chacun) - optionnel pour affinement manuel
+  severity        Int?  // Gravité de l'atteinte (remplace baseSeverity si renseigné)
   probability     Int?  // Vraisemblance
   scale           Int?  // Nombre de personnes
   vulnerability   Int?  // Vulnérabilité des personnes
@@ -389,6 +409,13 @@ model Tension {
 
   @@index([siaId])
   @@index([status])
+  @@index([calculatedSeverity])
+}
+
+enum TensionLevel {
+  INDIVIDUAL   // Tension affectant des individus
+  RELATIONAL   // Tension affectant des relations entre acteurs
+  SYSTEMIC     // Tension à l'échelle du système ou de la société
 }
 
 model TensionEdge {
@@ -401,23 +428,37 @@ model TensionEdge {
 }
 
 enum TensionPattern {
+  // Tensions individuelles
   SECURITY_VS_PRIVACY
-  PERSONALIZATION_VS_AUTONOMY
-  EFFICIENCY_VS_TRANSPARENCY
   PERFORMANCE_VS_EQUITY
+  EFFICIENCY_VS_TRANSPARENCY
   AUTOMATION_VS_RECOURSE
+  PERSONALIZATION_VS_AUTONOMY
   PRECISION_VS_MINIMIZATION
-  INNOVATION_VS_PRECAUTION
-  STANDARDIZATION_VS_SINGULARITY
-  SPEED_VS_REFLECTION
   EXHAUSTIVITY_VS_OBLIVION
-  ACCESSIBILITY_VS_CONTROL
   PREDICTION_VS_FREEWILL
+  SPEED_VS_REFLECTION
+  WELLBEING_VS_AUTONOMY
+  ASSISTANCE_VS_DEPENDENCY
+  EFFICIENCY_VS_HUMAN_CONTROL
+
+  // Tensions systémiques
+  EFFICIENCY_VS_EMPLOYMENT
+  PERFORMANCE_VS_ENVIRONMENT
+  CENTRALIZATION_VS_DEMOCRACY
+  STANDARDIZATION_VS_DIVERSITY
+  INNOVATION_VS_PRECAUTION
+
+  // Tensions relationnelles
   PERSONALIZATION_VS_EQUALITY
   CONFIDENTIALITY_VS_TRACEABILITY
-  WELLBEING_VS_AUTONOMY
   COLLECTIVE_VS_INDIVIDUAL
   EFFICIENCY_VS_PROTECTION
+  ACCESSIBILITY_VS_CONTROL
+  SCALE_VS_INDIVIDUALIZATION
+  DATA_EXPLOITATION_VS_USER_CONTROL
+  ENRICHMENT_VS_INVASIVE_INFERENCE
+
   OTHER
 }
 
@@ -439,23 +480,43 @@ model Arbitration {
   tensionId String  @unique
   tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
 
-  // Décision
-  decision          String @db.Text  // Quel droit priorisé et pourquoi
-  justification     String @db.Text  // Raisonnement détaillé
+  // Type de décision (3 options)
+  decision          ArbitrationDecision @default(MITIGATE)
+
+  // Justification obligatoire (min 20 caractères)
+  justification     String @db.Text
+
+  // Pour MITIGATE: mesures sélectionnées
+  selectedMeasures  String[]  // IDs des mesures choisies (templates d'actions)
+
+  // Pour ACCEPT_RISK: analyse bénéfice/risque
+  benefitAnalysis   String? @db.Text  // Pourquoi le bénéfice justifie le risque
+  riskAcceptance    String? @db.Text  // Quels risques sont explicitement acceptés
+
+  // Pour REJECT: explication
+  rejectionReason   String? @db.Text  // Pourquoi la détection n'est pas pertinente
+
+  // Détails supplémentaires
   proportionality   String? @db.Text // Nécessité, adéquation, proportionnalité
   contestability    String? @db.Text // Comment contester
   revisionConditions String? @db.Text // Quand réviser
-
-  // Mesures compensatoires
-  compensatoryMeasures String? @db.Text
+  compensatoryMeasures String? @db.Text // Mesures compensatoires additionnelles
 
   // Validation
+  arbitratedById String?
+  arbitratedAt   DateTime @default(now())
   validatedById  String?
   validatedAt    DateTime?
   nextReviewDate DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum ArbitrationDecision {
+  MITIGATE      // Mettre en place des mesures
+  ACCEPT_RISK   // Accepter le risque
+  REJECT        // Rejeter la détection (non applicable)
 }
 
 // ============================================

@@ -268,7 +268,6 @@ export function calculateVigilanceScores(
   const byDomain: Record<string, DomainScore> = {}
   let totalExposure = 0
   let totalCoverage = 0
-  let totalTensions = 0
 
   // Calculer pour chaque domaine
   for (const domainId of DOMAIN_IDS) {
@@ -293,7 +292,6 @@ export function calculateVigilanceScores(
 
     totalExposure += exposure
     totalCoverage += coverage
-    totalTensions += tensionCount
   }
 
   // Score global

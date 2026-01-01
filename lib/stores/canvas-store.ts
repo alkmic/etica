@@ -25,12 +25,16 @@ export interface CanvasNode extends Node {
   }
 }
 
-export interface CanvasEdge extends Edge {
-  data?: {
-    dataTypes?: string[]
-    description?: string
-    domains?: string[]
-  }
+export type CanvasEdgeData = {
+  dataTypes?: string[]
+  description?: string
+  domains?: string[]
+}
+
+export type CanvasEdge = Edge<CanvasEdgeData> & {
+  id: string
+  source: string
+  target: string
 }
 
 interface CanvasState {
