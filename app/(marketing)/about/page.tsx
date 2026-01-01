@@ -136,14 +136,15 @@ export default function AboutPage() {
             </p>
             <ol className="list-decimal list-inside space-y-2 ml-4">
               <li><strong>Cartographie</strong> : Modélisation visuelle des flux de données et de décisions</li>
-              <li><strong>Détection</strong> : Identification automatique des tensions éthiques potentielles</li>
+              <li><strong>Détection</strong> : Identification automatique des dilemmes éthiques potentiels</li>
               <li><strong>Arbitrage</strong> : Documentation structurée des choix et justifications</li>
-              <li><strong>Action</strong> : Suivi des mesures de mitigation et preuves de conformité</li>
+              <li><strong>Suivi</strong> : Plan d'action, profil éthique et calendrier de révisions</li>
             </ol>
             <p className="text-muted-foreground mt-4">
-              ETICA s'appuie sur le cadre FRIA (Fundamental Rights Impact Assessment) et couvre
-              8 domaines de vigilance éthique : vie privée, équité, transparence, autonomie,
-              sécurité, recours, durabilité et responsabilité.
+              ETICA analyse 12 domaines éthiques organisés en 3 cercles concentriques :
+              les Personnes (vie privée, équité, transparence, autonomie, sécurité, recours),
+              l'Organisation (maîtrise, responsabilité, souveraineté) et
+              la Société (durabilité, loyauté, équilibre sociétal).
             </p>
           </CardContent>
         </Card>

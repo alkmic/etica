@@ -14,6 +14,10 @@ import {
   MessageSquare,
   Leaf,
   ClipboardCheck,
+  Sliders,
+  Landmark,
+  Gem,
+  Globe,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,14 +37,21 @@ const demoSias = [
     actionCount: 12,
     completedActionCount: 4,
     domainScores: {
+      // Cercle 1 : Personnes
       'Vie privée': 3.5,
       'Équité': 2.8,
       'Transparence': 2.5,
       'Autonomie': 3.0,
       'Sécurité': 4.2,
       'Recours': 2.5,
-      'Durabilité': 4.0,
+      // Cercle 2 : Organisation
+      'Maîtrise': 3.8,
       'Responsabilité': 3.8,
+      'Souveraineté': 3.5,
+      // Cercle 3 : Société
+      'Durabilité': 4.0,
+      'Loyauté': 3.5,
+      'Équilibre': 3.2,
     },
   },
   {
@@ -55,14 +66,21 @@ const demoSias = [
     actionCount: 8,
     completedActionCount: 5,
     domainScores: {
+      // Cercle 1 : Personnes
       'Vie privée': 3.0,
       'Équité': 2.5,
       'Transparence': 3.5,
       'Autonomie': 3.5,
       'Sécurité': 4.0,
       'Recours': 3.0,
-      'Durabilité': 4.5,
+      // Cercle 2 : Organisation
+      'Maîtrise': 4.0,
       'Responsabilité': 3.5,
+      'Souveraineté': 4.0,
+      // Cercle 3 : Société
+      'Durabilité': 4.5,
+      'Loyauté': 3.8,
+      'Équilibre': 3.5,
     },
   },
   {
@@ -77,14 +95,21 @@ const demoSias = [
     actionCount: 6,
     completedActionCount: 4,
     domainScores: {
+      // Cercle 1 : Personnes
       'Vie privée': 4.0,
       'Équité': 4.2,
       'Transparence': 3.8,
       'Autonomie': 4.0,
       'Sécurité': 4.5,
       'Recours': 3.5,
-      'Durabilité': 4.0,
+      // Cercle 2 : Organisation
+      'Maîtrise': 3.0,
       'Responsabilité': 4.0,
+      'Souveraineté': 2.5,
+      // Cercle 3 : Société
+      'Durabilité': 4.0,
+      'Loyauté': 4.2,
+      'Équilibre': 4.0,
     },
   },
 ]
@@ -186,7 +211,7 @@ export default function DemoPage() {
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Explorez des exemples de systèmes d&apos;IA analysés avec notre méthodologie
-          basée sur les 8 domaines de vigilance éthique.
+          basée sur 12 domaines éthiques organisés en 3 cercles.
         </p>
       </div>
 
@@ -215,7 +240,7 @@ export default function DemoPage() {
                 Scores par domaine
               </CardTitle>
               <CardDescription>
-                Évaluation sur les 8 domaines de vigilance (1-5)
+                Évaluation sur les 12 domaines éthiques (1-5)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -223,14 +248,21 @@ export default function DemoPage() {
                 {Object.entries(selectedSia.domainScores).map(([domain, score]) => {
                   const percentage = (score / 5) * 100
                   const icons: Record<string, React.ReactNode> = {
+                    // Cercle 1 : Personnes
                     'Vie privée': <Lock className="h-4 w-4" />,
                     'Équité': <Scale className="h-4 w-4" />,
                     'Transparence': <Eye className="h-4 w-4" />,
                     'Autonomie': <Users className="h-4 w-4" />,
                     'Sécurité': <Shield className="h-4 w-4" />,
                     'Recours': <MessageSquare className="h-4 w-4" />,
-                    'Durabilité': <Leaf className="h-4 w-4" />,
+                    // Cercle 2 : Organisation
+                    'Maîtrise': <Sliders className="h-4 w-4" />,
                     'Responsabilité': <ClipboardCheck className="h-4 w-4" />,
+                    'Souveraineté': <Landmark className="h-4 w-4" />,
+                    // Cercle 3 : Société
+                    'Durabilité': <Leaf className="h-4 w-4" />,
+                    'Loyauté': <Gem className="h-4 w-4" />,
+                    'Équilibre': <Globe className="h-4 w-4" />,
                   }
 
                   return (

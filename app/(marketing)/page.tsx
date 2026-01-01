@@ -32,21 +32,44 @@ const features = [
   },
   {
     icon: CheckCircle,
-    title: 'Plan d\'action',
+    title: 'Suivi',
     description:
-      'Suivez les mesures de mitigation et démontrez vos progrès avec des preuves.',
+      'Suivez les actions, visualisez votre profil éthique et planifiez les révisions.',
   },
 ]
 
-const domains = [
-  { name: 'Vie privée', color: 'bg-violet-500', description: 'Protection des données personnelles et respect de l\'intimité' },
-  { name: 'Équité', color: 'bg-pink-500', description: 'Non-discrimination et traitement égal des individus' },
-  { name: 'Transparence', color: 'bg-amber-500', description: 'Explicabilité des décisions et information des personnes' },
-  { name: 'Autonomie', color: 'bg-emerald-500', description: 'Préservation du libre-arbitre et du consentement' },
-  { name: 'Sécurité', color: 'bg-blue-500', description: 'Protection contre les risques et les usages malveillants' },
-  { name: 'Recours', color: 'bg-red-500', description: 'Droit de contestation et de réparation' },
-  { name: 'Durabilité', color: 'bg-green-500', description: 'Impact environnemental et pérennité' },
-  { name: 'Responsabilité', color: 'bg-indigo-500', description: 'Imputabilité et gouvernance' },
+// 12 domains organized in 3 circles
+const domainCircles = [
+  {
+    name: 'Personnes',
+    color: 'bg-blue-500',
+    domains: [
+      { name: 'Vie privée', description: 'Protection des données personnelles et respect de l\'intimité' },
+      { name: 'Équité', description: 'Non-discrimination et traitement égal des individus' },
+      { name: 'Transparence', description: 'Explicabilité des décisions et information des personnes' },
+      { name: 'Autonomie', description: 'Préservation du libre-arbitre et du consentement' },
+      { name: 'Sécurité', description: 'Protection contre les risques et les usages malveillants' },
+      { name: 'Recours', description: 'Droit de contestation et de réparation' },
+    ],
+  },
+  {
+    name: 'Organisation',
+    color: 'bg-violet-500',
+    domains: [
+      { name: 'Maîtrise', description: 'Compréhension et contrôle du système' },
+      { name: 'Responsabilité', description: 'Imputabilité et chaîne de responsabilité' },
+      { name: 'Souveraineté', description: 'Indépendance vis-à-vis des fournisseurs' },
+    ],
+  },
+  {
+    name: 'Société',
+    color: 'bg-green-500',
+    domains: [
+      { name: 'Durabilité', description: 'Impact environnemental et social' },
+      { name: 'Loyauté', description: 'Relations équilibrées avec les parties prenantes' },
+      { name: 'Équilibre', description: 'Contribution positive à la société' },
+    ],
+  },
 ]
 
 export default function HomePage() {
@@ -108,27 +131,34 @@ export default function HomePage() {
         </Card>
       </section>
 
-      {/* 8 domains */}
+      {/* 12 domains in 3 circles */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold">8 domaines de vigilance</h2>
+          <h2 className="text-3xl font-bold">12 domaines éthiques</h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Une analyse complète couvrant tous les droits fondamentaux
+            Organisés en 3 cercles : Personnes, Organisation, Société
           </p>
         </div>
-        <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
-          {domains.map((domain) => (
-            <Tooltip key={domain.name}>
-              <TooltipTrigger asChild>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border hover:bg-muted transition-colors cursor-help">
-                  <div className={`h-3 w-3 rounded-full ${domain.color}`} />
-                  <span className="text-sm font-medium">{domain.name}</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <p>{domain.description}</p>
-              </TooltipContent>
-            </Tooltip>
+        <div className="max-w-4xl mx-auto space-y-6">
+          {domainCircles.map((circle) => (
+            <div key={circle.name} className="flex flex-wrap items-center justify-center gap-3">
+              <span className={`px-3 py-1 rounded-full text-white text-xs font-semibold ${circle.color}`}>
+                {circle.name}
+              </span>
+              {circle.domains.map((domain) => (
+                <Tooltip key={domain.name}>
+                  <TooltipTrigger asChild>
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border hover:bg-muted transition-colors cursor-help">
+                      <div className={`h-3 w-3 rounded-full ${circle.color}`} />
+                      <span className="text-sm font-medium">{domain.name}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p>{domain.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
           ))}
         </div>
       </section>
