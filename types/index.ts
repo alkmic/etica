@@ -85,17 +85,18 @@ export interface Action {
   siaId: string
   tensionId: string | null
   title: string
-  description: string
+  description: string | null
   category: string
   priority: string
   status: string
-  effort: string | null
+  effort: string
   dueDate: Date | null
+  completedAt: Date | null
   assigneeId: string | null
   templateId: string | null
   sourceRule: string | null
-  estimatedImpact: string | null
-  checklist: string[] | null
+  estimatedImpact: Record<string, number> | null
+  checklist: Array<{ text: string; completed: boolean }> | null
   createdAt: Date
   updatedAt: Date
 }
@@ -103,7 +104,7 @@ export interface Action {
 export interface Arbitration {
   id: string
   tensionId: string
-  decisionType: string
+  decision: string
   justification: string
   selectedMeasures: string[]
   benefitAnalysis: string | null
@@ -113,8 +114,10 @@ export interface Arbitration {
   contestability: string | null
   revisionConditions: string | null
   compensatoryMeasures: string | null
-  arbitratedById: string
+  arbitratedById: string | null
   arbitratedAt: Date
+  validatedById: string | null
+  validatedAt: Date | null
   nextReviewDate: Date | null
   createdAt: Date
   updatedAt: Date
@@ -123,11 +126,14 @@ export interface Arbitration {
 export interface Evidence {
   id: string
   actionId: string
-  title: string
   type: string
+  title: string
+  description: string | null
   url: string | null
-  content: string | null
-  uploadedById: string
+  fileKey: string | null
+  fileName: string | null
+  fileSize: number | null
+  mimeType: string | null
   createdAt: Date
 }
 
@@ -136,6 +142,7 @@ export interface Comment {
   tensionId: string
   authorId: string
   content: string
+  resolved: boolean
   parentId: string | null
   createdAt: Date
   updatedAt: Date
@@ -144,9 +151,16 @@ export interface Comment {
 export interface Version {
   id: string
   siaId: string
-  version: number
-  changes: string
+  number: number
+  label: string | null
+  changelog: string | null
   snapshot: Record<string, unknown>
+  vigilanceScores: Record<string, unknown> | null
+  globalScore: number | null
+  tensionCount: number | null
+  resolvedCount: number | null
+  actionCount: number | null
+  completedCount: number | null
   createdById: string
   createdAt: Date
 }
