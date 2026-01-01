@@ -1,6 +1,3 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -18,7 +15,6 @@ import {
   Leaf,
   Gem,
   Globe,
-  ChevronDown,
   ChevronRight,
   Map,
   Search,
@@ -28,6 +24,7 @@ import {
   Lightbulb,
   HelpCircle,
   ArrowDown,
+  BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -39,17 +36,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-
-// Table of contents for sticky navigation
-const tableOfContents = [
-  { id: 'intro', label: 'Introduction' },
-  { id: 'dilemme', label: 'Qu\'est-ce qu\'un dilemme ?' },
-  { id: 'domaines', label: 'Les 12 domaines' },
-  { id: 'etapes', label: 'Les 4 étapes' },
-  { id: 'moteur', label: 'Le moteur de règles' },
-  { id: 'faq', label: 'FAQ' },
-  { id: 'resume', label: 'En résumé' },
-]
 
 // Circle 1: Persons - 6 domains
 const circle1Domains = [
@@ -324,31 +310,31 @@ function DomainCard({ domain }: { domain: typeof circle1Domains[0] }) {
 // Circles Visualization Component
 function CirclesVisualization() {
   return (
-    <div className="relative w-full max-w-2xl mx-auto aspect-square p-4">
+    <div className="relative w-full max-w-xl mx-auto aspect-square">
       {/* Circle 3 - Society (outermost) */}
-      <div className="absolute inset-0 rounded-full border-4 border-green-500/30 bg-green-500/5 flex items-center justify-center">
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
-          <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
+      <div className="absolute inset-0 rounded-full border-4 border-green-500/30 bg-green-500/5">
+        <div className="absolute inset-x-0 top-8 text-center">
+          <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30 font-semibold">
             CERCLE 3 : SOCIÉTÉ
           </Badge>
-          <p className="text-xs text-muted-foreground mt-1">Durabilité • Loyauté • Équilibre</p>
+          <p className="text-xs text-muted-foreground mt-2">Durabilité • Loyauté • Équilibre</p>
         </div>
       </div>
 
       {/* Circle 2 - Organization */}
-      <div className="absolute inset-[15%] rounded-full border-4 border-violet-500/30 bg-violet-500/5 flex items-center justify-center">
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 text-center">
-          <Badge variant="outline" className="bg-violet-500/10 text-violet-700 border-violet-500/30 text-xs">
+      <div className="absolute inset-[15%] rounded-full border-4 border-violet-500/30 bg-violet-500/5">
+        <div className="absolute inset-x-0 top-6 text-center">
+          <Badge variant="outline" className="bg-violet-500/10 text-violet-700 border-violet-500/30 font-semibold text-xs">
             CERCLE 2 : ORGANISATION
           </Badge>
-          <p className="text-[10px] text-muted-foreground mt-0.5">Maîtrise • Responsabilité • Souveraineté</p>
+          <p className="text-xs text-muted-foreground mt-1.5">Maîtrise • Responsabilité • Souveraineté</p>
         </div>
       </div>
 
       {/* Circle 1 - Persons (innermost) */}
-      <div className="absolute inset-[30%] rounded-full border-4 border-blue-500/30 bg-blue-500/10 flex items-center justify-center">
-        <div className="text-center p-4">
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/30 text-xs">
+      <div className="absolute inset-[32%] rounded-full border-4 border-blue-500/30 bg-blue-500/10 flex items-center justify-center">
+        <div className="text-center px-2">
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/30 font-semibold text-xs">
             CERCLE 1 : PERSONNES
           </Badge>
           <p className="text-xs text-muted-foreground mt-2">6 domaines fondamentaux</p>
@@ -400,70 +386,26 @@ function WorkflowDiagram() {
 }
 
 export default function MethodologyPage() {
-  const [activeSection, setActiveSection] = useState('intro')
-
-  // Track scroll position for active section
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = tableOfContents.map(item => document.getElementById(item.id))
-      const scrollPosition = window.scrollY + 150
-
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const section = sections[i]
-        if (section && section.offsetTop <= scrollPosition) {
-          setActiveSection(tableOfContents[i].id)
-          break
-        }
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
   return (
-    <div className="min-h-screen">
-      {/* Sticky Table of Contents - Desktop */}
-      <nav className="hidden lg:block fixed left-4 top-1/2 -translate-y-1/2 z-50 w-48">
-        <div className="bg-card/80 backdrop-blur-sm border rounded-lg p-3 shadow-lg">
-          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Navigation</p>
-          <ul className="space-y-1">
-            {tableOfContents.map((item) => (
-              <li key={item.id}>
-                <a
-                  href={`#${item.id}`}
-                  className={`block text-sm py-1 px-2 rounded transition-colors ${
-                    activeSection === item.id
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
+    <div className="container mx-auto px-4 py-12 max-w-4xl">
+      {/* Hero */}
+      <div className="text-center mb-16">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+          <BookOpen className="h-4 w-4" />
+          Guide complet
         </div>
-      </nav>
+        <h1 className="text-4xl font-bold tracking-tight mb-6">
+          Méthodologie ETICA
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+          Comprendre comment ETICA détecte et documente les dilemmes éthiques de votre système d'IA
+        </p>
+        <blockquote className="text-lg italic text-muted-foreground border-l-4 border-primary pl-4 max-w-xl mx-auto text-left">
+          "ETICA ne vous dit pas ce qui est bien ou mal — il vous aide à voir clairement les choix que vous faites."
+        </blockquote>
+      </div>
 
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
-        {/* SECTION 0: Hero */}
-        <header className="text-center mb-20">
-          <Badge variant="outline" className="mb-6 px-4 py-1.5">
-            Guide complet
-          </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-            Méthodologie ETICA
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Comprendre comment ETICA détecte et documente les dilemmes éthiques de votre système d'IA
-          </p>
-          <blockquote className="text-lg italic text-primary border-l-4 border-primary pl-4 max-w-xl mx-auto text-left">
-            "ETICA ne vous dit pas ce qui est bien ou mal — il vous aide à voir clairement les choix que vous faites."
-          </blockquote>
-        </header>
-
-        <Separator className="my-12" />
+      <Separator className="my-12" />
 
         {/* SECTION 1: Introduction */}
         <section id="intro" className="mb-20 scroll-mt-24">
@@ -1030,32 +972,32 @@ export default function MethodologyPage() {
               </AccordionTrigger>
               <AccordionContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Ces règles s'activent selon le secteur d'activité.
+                  Ces règles s'activent selon le secteur d'activité. Voici quelques exemples par domaine :
                 </p>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <p className="font-semibold text-sm mb-2">Santé</p>
+                    <p className="font-semibold text-sm mb-2">Santé <span className="font-normal text-muted-foreground">(exemples)</span></p>
                     <div className="space-y-1 font-mono text-xs text-muted-foreground">
                       <p>Aide au diagnostic → Assistance ↔ Relation soignant-patient</p>
                       <p>Triage automatisé → Efficience ↔ Attention individuelle</p>
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm mb-2">Ressources Humaines</p>
+                    <p className="font-semibold text-sm mb-2">Ressources Humaines <span className="font-normal text-muted-foreground">(exemples)</span></p>
                     <div className="space-y-1 font-mono text-xs text-muted-foreground">
                       <p>Tri de CV → Objectivité ↔ Singularité des parcours</p>
                       <p>Prédiction turnover → Gestion ↔ Vie privée</p>
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm mb-2">Finance</p>
+                    <p className="font-semibold text-sm mb-2">Finance <span className="font-normal text-muted-foreground">(exemples)</span></p>
                     <div className="space-y-1 font-mono text-xs text-muted-foreground">
                       <p>Scoring crédit → Précision ↔ Inclusion financière</p>
                       <p>Détection fraude → Sécurité ↔ Présomption d'innocence</p>
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm mb-2">Assurance</p>
+                    <p className="font-semibold text-sm mb-2">Assurance <span className="font-normal text-muted-foreground">(exemples)</span></p>
                     <div className="space-y-1 font-mono text-xs text-muted-foreground">
                       <p>Tarification individualisée → Précision ↔ Mutualisation</p>
                       <p>Automatisation sinistres → Rapidité ↔ Attention particulière</p>
@@ -1200,7 +1142,6 @@ export default function MethodologyPage() {
             </div>
           </div>
         </section>
-      </div>
     </div>
   )
 }
