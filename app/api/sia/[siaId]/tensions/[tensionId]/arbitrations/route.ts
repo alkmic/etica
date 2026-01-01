@@ -131,7 +131,7 @@ export async function POST(
       const arbitration = await tx.arbitration.create({
         data: {
           tensionId,
-          decisionType: validatedData.decisionType,
+          decision: validatedData.decisionType,
           justification: validatedData.justification,
           selectedMeasures: validatedData.selectedMeasures || [],
           benefitAnalysis: validatedData.benefitAnalysis || null,
@@ -297,7 +297,7 @@ export async function PUT(
     const arbitration = await db.arbitration.update({
       where: { id: tension.arbitration.id },
       data: {
-        decisionType: validatedData.decisionType,
+        decision: validatedData.decisionType,
         justification: validatedData.justification,
         selectedMeasures: validatedData.selectedMeasures || [],
         benefitAnalysis: validatedData.benefitAnalysis || null,

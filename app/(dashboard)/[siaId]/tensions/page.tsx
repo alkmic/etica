@@ -60,7 +60,7 @@ interface Tension {
   poles: [string, string]
   arbitration: {
     id: string
-    decisionType: string
+    decision: string
     justification: string
     arbitratedAt: string
   } | null
@@ -521,9 +521,9 @@ function TensionCard({ tension, siaId }: { tension: Tension; siaId: string }) {
                   {tension.arbitration && (
                     <Badge variant="outline" className="text-xs">
                       <Gavel className="h-3 w-3 mr-1" />
-                      {tension.arbitration.decisionType === 'MITIGATE' && 'Mitigation'}
-                      {tension.arbitration.decisionType === 'ACCEPT_RISK' && 'Risque accepté'}
-                      {tension.arbitration.decisionType === 'REJECT' && 'Rejeté'}
+                      {tension.arbitration.decision === 'MITIGATE' && 'Mitigation'}
+                      {tension.arbitration.decision === 'ACCEPT_RISK' && 'Risque accepté'}
+                      {tension.arbitration.decision === 'REJECT' && 'Rejeté'}
                     </Badge>
                   )}
                 </div>

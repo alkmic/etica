@@ -72,7 +72,7 @@ interface Tension {
   suggestedMeasures: SuggestedMeasure[]
   arbitration: {
     id: string
-    decisionType: string
+    decision: string
     justification: string
     selectedMeasures: string[]
     benefitAnalysis: string | null
@@ -201,7 +201,7 @@ export default function TensionDetailPage() {
 
           // Pre-fill form if arbitration exists
           if (data.arbitration) {
-            setDecisionType(data.arbitration.decisionType)
+            setDecisionType(data.arbitration.decision)
             setJustification(data.arbitration.justification || '')
             setSelectedMeasures(data.arbitration.selectedMeasures || [])
             setBenefitAnalysis(data.arbitration.benefitAnalysis || '')
@@ -835,15 +835,15 @@ export default function TensionDetailPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Badge className={
-                    tension.arbitration.decisionType === 'MITIGATE'
+                    tension.arbitration.decision === 'MITIGATE'
                       ? 'bg-blue-100 text-blue-800'
-                      : tension.arbitration.decisionType === 'ACCEPT_RISK'
+                      : tension.arbitration.decision === 'ACCEPT_RISK'
                       ? 'bg-orange-100 text-orange-800'
                       : 'bg-gray-100 text-gray-800'
                   }>
-                    {tension.arbitration.decisionType === 'MITIGATE' && 'Mitigation'}
-                    {tension.arbitration.decisionType === 'ACCEPT_RISK' && 'Risque accepte'}
-                    {tension.arbitration.decisionType === 'REJECT' && 'Detection rejetee'}
+                    {tension.arbitration.decision === 'MITIGATE' && 'Mitigation'}
+                    {tension.arbitration.decision === 'ACCEPT_RISK' && 'Risque accepte'}
+                    {tension.arbitration.decision === 'REJECT' && 'Detection rejetee'}
                   </Badge>
                 </div>
 

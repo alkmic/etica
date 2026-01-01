@@ -481,7 +481,7 @@ model Arbitration {
   tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
 
   // Type de décision (3 options)
-  decisionType      ArbitrationDecision @default(MITIGATE)
+  decision          ArbitrationDecision @default(MITIGATE)
 
   // Justification obligatoire (min 20 caractères)
   justification     String @db.Text
