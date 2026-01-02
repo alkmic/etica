@@ -298,7 +298,7 @@ export default function NewSiaPage() {
       })
 
       router.push(`/${result.data.id}`)
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Une erreur est survenue lors de la création.',

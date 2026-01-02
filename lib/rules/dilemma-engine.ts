@@ -8,7 +8,7 @@ import { DATA_RULES } from './data-rules';
 import { DEPENDENCY_RULES } from './dependency-rules';
 import { CONTEXTUAL_RULES } from './contextual-rules';
 import { GOVERNANCE_RULES } from './governance-rules';
-import { EthicalDomain, formatDilemma } from '@/lib/constants/ethical-domains';
+import { EthicalDomain } from '@/lib/constants/ethical-domains';
 
 // ============================================
 // AGRÉGATION DES RÈGLES
@@ -58,10 +58,6 @@ function createContext(input: DetectionInput): EvaluationContext {
 
 function getNodesByType(ctx: EvaluationContext, type: string): DetectionInput['nodes'] {
   return ctx.nodes.filter(n => n.type === type);
-}
-
-function getEdgesByNature(ctx: EvaluationContext, natures: string[]): DetectionInput['edges'] {
-  return ctx.edges.filter(e => natures.includes(e.nature));
 }
 
 function checkNodeAttribute(node: DetectionInput['nodes'][0], attr: string, value: unknown): boolean {

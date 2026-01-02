@@ -208,7 +208,8 @@ export default function SiaDashboardPage() {
   const dilemmasCount = sia.dilemmas?.length || 0
   const pendingDilemmas = sia.dilemmas?.filter((d) => d.maturity < 3).length || 0
   const criticalDilemmas = sia.dilemmas?.filter((d) => d.severity >= 5 && d.maturity < 3).length || 0
-  const _resolvedDilemmas = sia.dilemmas?.filter((d) => d.maturity >= 3).length || 0
+  const resolvedDilemmas = sia.dilemmas?.filter((d) => d.maturity >= 3).length || 0
+  void resolvedDilemmas // Future use for dashboard metrics
 
   const completedActions = sia.actions.filter((a) => a.status === 'COMPLETED').length
   const actionProgress = sia.actions.length > 0

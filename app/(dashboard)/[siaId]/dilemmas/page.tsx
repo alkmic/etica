@@ -162,13 +162,14 @@ export default function DilemmasPage() {
   const analyzedDilemmas = filteredDilemmas.filter((d) => d.maturity === 2)
   const resolvedDilemmas = filteredDilemmas.filter((d) => d.maturity >= 3)
 
-  // Stats (used by CriticalityStats component)
-  const _stats = useMemo(() => ({
+  // Stats computed for display
+  const stats = useMemo(() => ({
     total: dilemmas.length,
     pending: dilemmas.filter((d) => d.maturity < 2).length,
     critical: dilemmas.filter((d) => d.severity >= 5 && d.maturity < 3).length,
     resolved: dilemmas.filter((d) => d.maturity >= 3).length,
   }), [dilemmas])
+  void stats // Future use for CriticalityStats component
 
   // Matrix data for CriticalityMatrix
   const matrixData = useMemo(() => {
