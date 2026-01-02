@@ -39,7 +39,7 @@ export default function SiaLayout({
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-6 h-12">
             <Button variant="ghost" size="sm" asChild className="gap-2">
-              <Link href="/">
+              <Link href="/dashboard">
                 <ChevronLeft className="h-4 w-4" />
                 Tous les SIA
               </Link>
