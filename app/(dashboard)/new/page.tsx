@@ -111,7 +111,7 @@ export default function NewSiaPage() {
       })
 
       // Go directly to cartography
-      router.push(`/${sia.id}/canvas`)
+      router.push(`/${sia.id}/map`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Une erreur inattendue est survenue'
       toast({
