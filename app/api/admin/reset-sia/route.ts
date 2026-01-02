@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db'
 import { authOptions } from '@/lib/auth'
 
 /**
@@ -28,24 +28,24 @@ export async function DELETE(request: Request) {
     }
 
     // Compter les SIA avant suppression
-    const countBefore = await prisma.sia.count()
+    const countBefore = await db.sia.count()
 
     // Supprimer toutes les données SIA (les cascades s'occupent du reste)
     // L'ordre est important à cause des relations
-    await prisma.$transaction([
+    await db.$transaction([
       // D'abord les tables dépendantes sans cascade
-      prisma.comment.deleteMany(),
-      prisma.evidence.deleteMany(),
-      prisma.tensionEdge.deleteMany(),
-      prisma.arbitration.deleteMany(),
-      prisma.action.deleteMany(),
-      prisma.tension.deleteMany(),
-      prisma.edge.deleteMany(),
-      prisma.node.deleteMany(),
-      prisma.siaMember.deleteMany(),
-      prisma.version.deleteMany(),
+      db.comment.deleteMany(),
+      db.evidence.deleteMany(),
+      db.tensionEdge.deleteMany(),
+      db.arbitration.deleteMany(),
+      db.action.deleteMany(),
+      db.tension.deleteMany(),
+      db.edge.deleteMany(),
+      db.node.deleteMany(),
+      db.siaMember.deleteMany(),
+      db.version.deleteMany(),
       // Enfin les SIA
-      prisma.sia.deleteMany(),
+      db.sia.deleteMany(),
     ])
 
     return NextResponse.json({
@@ -73,12 +73,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const stats = await prisma.$transaction([
-      prisma.sia.count(),
-      prisma.node.count(),
-      prisma.edge.count(),
-      prisma.tension.count(),
-      prisma.action.count(),
+    const stats = await db.$transaction([
+      db.sia.count(),
+      db.node.count(),
+      db.edge.count(),
+      db.tension.count(),
+      db.action.count(),
     ])
 
     return NextResponse.json({
