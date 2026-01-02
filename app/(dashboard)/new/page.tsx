@@ -216,6 +216,9 @@ export default function NewSiaPage() {
                 <Label htmlFor="name" required>
                   Nom de votre système d'IA
                 </Label>
+                <p className="text-xs text-muted-foreground">
+                  Un nom court et descriptif pour identifier facilement ce système.
+                </p>
                 <Input
                   id="name"
                   placeholder="Ex: Système de tri de candidatures"
@@ -226,9 +229,12 @@ export default function NewSiaPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description (optionnel)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Décrivez brièvement ce que fait le système et son objectif principal.
+                </p>
                 <Textarea
                   id="description"
-                  placeholder="Décrivez ce que fait votre système en quelques mots..."
+                  placeholder="Ex: Ce système analyse les CV reçus et classe les candidatures selon leur pertinence pour le poste..."
                   value={data.description}
                   onChange={(e) => updateData({ description: e.target.value })}
                   rows={3}
@@ -237,6 +243,9 @@ export default function NewSiaPage() {
 
               <div className="space-y-3">
                 <Label required>Domaine d'application</Label>
+                <p className="text-xs text-muted-foreground">
+                  Le secteur d'activité permet de détecter des dilemmes éthiques spécifiques à votre contexte.
+                </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {Object.values(SIA_DOMAINS).map((domain) => (
                     <button
@@ -264,7 +273,8 @@ export default function NewSiaPage() {
               <div>
                 <Label required>Quels types de données votre système utilise-t-il ?</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Sélectionnez toutes les catégories pertinentes
+                  Sélectionnez toutes les catégories de données traitées par votre système.
+                  Les données sensibles (orange/rouge) déclenchent des analyses plus approfondies.
                 </p>
               </div>
 
@@ -330,7 +340,8 @@ export default function NewSiaPage() {
               <div>
                 <Label required>Que produit votre système ?</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Quel est le niveau d'automatisation des décisions ?
+                  Plus le niveau d'automatisation est élevé, plus les enjeux éthiques liés au
+                  recours et à l'autonomie des personnes sont importants.
                 </p>
               </div>
 
@@ -373,7 +384,8 @@ export default function NewSiaPage() {
               <div>
                 <Label required>Qui est concerné par les décisions du système ?</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Sélectionnez les populations impactées
+                  Identifiez toutes les personnes physiques impactées directement ou indirectement
+                  par les outputs de votre système (recommandations, décisions, notifications, etc.)
                 </p>
               </div>
 
@@ -400,12 +412,12 @@ export default function NewSiaPage() {
               <div className="space-y-3">
                 <Label required>Des personnes vulnérables sont-elles concernées ?</Label>
                 <p className="text-xs text-muted-foreground">
-                  Mineurs, personnes en difficulté économique, personnes âgées, etc.
+                  Mineurs, personnes en difficulté économique, personnes âgées, personnes handicapées, etc.
                 </p>
                 <RadioGroup
-                  value={data.hasVulnerable === null ? '' : data.hasVulnerable ? 'yes' : 'no'}
+                  value={data.hasVulnerable === null ? 'unknown' : data.hasVulnerable ? 'yes' : 'no'}
                   onValueChange={(value) =>
-                    updateData({ hasVulnerable: value === 'yes' })
+                    updateData({ hasVulnerable: value === 'yes' ? true : value === 'no' ? false : null })
                   }
                   className="flex gap-4"
                 >
@@ -426,6 +438,10 @@ export default function NewSiaPage() {
 
               <div className="space-y-3">
                 <Label required>Ordre de grandeur des personnes impactées</Label>
+                <p className="text-xs text-muted-foreground">
+                  L'échelle d'impact influence la gravité potentielle des tensions éthiques.
+                  Plus le nombre est élevé, plus la vigilance requise est importante.
+                </p>
                 <RadioGroup
                   value={data.scale}
                   onValueChange={(value) => updateData({ scale: value })}
