@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -17,6 +17,9 @@ import {
   ArrowUpRight,
   ArrowUpDown,
   AlertCircle,
+  List,
+  CalendarDays,
+  ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Select,
   SelectContent,
@@ -38,7 +42,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   DropdownMenu,
@@ -48,9 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { NextStepPrompt } from '@/components/workflow/next-step-prompt'
 import { useToast } from '@/hooks/use-toast'
-import { ACTION_TEMPLATES } from '@/lib/constants/action-templates'
 
 interface Action {
   id: string
@@ -124,6 +125,7 @@ export default function ActionsPage() {
 
   const [actions, setActions] = useState<Action[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('list')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
@@ -234,7 +236,7 @@ export default function ActionsPage() {
           setActions((prev) => [action, ...prev])
           toast({
             title: 'Action créée',
-            description: 'L\'action a été ajoutée au plan',
+            description: 'L\'action a été ajoutée au suivi',
           })
         }
         handleCloseDialog()
@@ -348,15 +350,64 @@ export default function ActionsPage() {
       }
     })
 
+  // Calendar data: group actions by due date
+  const calendarData = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const thisWeek = new Date(today)
+    thisWeek.setDate(thisWeek.getDate() + 7)
+
+    const thisMonth = new Date(today)
+    thisMonth.setMonth(thisMonth.getMonth() + 1)
+
+    const overdue: Action[] = []
+    const thisWeekActions: Action[] = []
+    const thisMonthActions: Action[] = []
+    const later: Action[] = []
+    const noDueDate: Action[] = []
+
+    actions
+      .filter(a => a.status !== 'DONE' && a.status !== 'CANCELLED')
+      .forEach(action => {
+        if (!action.dueDate) {
+          noDueDate.push(action)
+          return
+        }
+
+        const dueDate = new Date(action.dueDate)
+        dueDate.setHours(0, 0, 0, 0)
+
+        if (dueDate < today) {
+          overdue.push(action)
+        } else if (dueDate <= thisWeek) {
+          thisWeekActions.push(action)
+        } else if (dueDate <= thisMonth) {
+          thisMonthActions.push(action)
+        } else {
+          later.push(action)
+        }
+      })
+
+    return {
+      overdue: overdue.sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()),
+      thisWeek: thisWeekActions.sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()),
+      thisMonth: thisMonthActions.sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()),
+      later: later.sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime()),
+      noDueDate,
+    }
+  }, [actions])
+
   const completedCount = actions.filter((a) => a.status === 'DONE').length
   const progress = actions.length > 0 ? Math.round((completedCount / actions.length) * 100) : 0
+  const overdueCount = actions.filter(isOverdue).length
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Chargement des actions...</p>
+          <p className="text-muted-foreground">Chargement du suivi...</p>
         </div>
       </div>
     )
@@ -368,322 +419,525 @@ export default function ActionsPage() {
         <div>
           <h1 className="text-2xl font-bold">Suivi</h1>
           <p className="text-muted-foreground">
-            Suivez et gérez les mesures de mitigation issues des arbitrages
+            Suivez les mesures de mitigation issues des arbitrages
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="mr-2 h-4 w-4" />
           Nouvelle action
         </Button>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          if (!open) handleCloseDialog()
-          else setIsDialogOpen(true)
-        }}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>{editingAction ? 'Modifier l\'action' : 'Créer une action'}</DialogTitle>
-              <DialogDescription>
-                {editingAction
-                  ? 'Modifiez les détails de l\'action'
-                  : 'Ajoutez une nouvelle action au plan de mitigation'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Titre</Label>
-                <Input
-                  id="title"
-                  value={newAction.title}
-                  onChange={(e) => setNewAction({ ...newAction, title: e.target.value })}
-                  placeholder="Ex: Implémenter le chiffrement des données"
-                />
+      </div>
+
+      {/* Progress Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Progression</p>
+                <p className="text-2xl font-bold">{progress}%</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newAction.description}
-                  onChange={(e) => setNewAction({ ...newAction, description: e.target.value })}
-                  placeholder="Décrivez l'action à réaliser..."
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Priorité</Label>
-                  <Select
-                    value={newAction.priority}
-                    onValueChange={(v) => setNewAction({ ...newAction, priority: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="LOW">Basse</SelectItem>
-                      <SelectItem value="MEDIUM">Moyenne</SelectItem>
-                      <SelectItem value="HIGH">Haute</SelectItem>
-                      <SelectItem value="CRITICAL">Critique</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Catégorie</Label>
-                  <Select
-                    value={newAction.category}
-                    onValueChange={(v) => setNewAction({ ...newAction, category: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(categoryLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate">Échéance</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={newAction.dueDate}
-                    onChange={(e) => setNewAction({ ...newAction, dueDate: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="assignee">Responsable</Label>
-                  <Input
-                    id="assignee"
-                    value={newAction.assignee}
-                    onChange={(e) => setNewAction({ ...newAction, assignee: e.target.value })}
-                    placeholder="Nom du responsable"
-                  />
-                </div>
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={handleCloseDialog}>
-                Annuler
-              </Button>
-              <Button onClick={handleSaveAction} disabled={saving}>
-                {saving
-                  ? (editingAction ? 'Enregistrement...' : 'Création...')
-                  : (editingAction ? 'Enregistrer' : 'Créer l\'action')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <Progress value={progress} className="h-2 mt-3" />
+          </CardContent>
+        </Card>
 
-      {/* Progress */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Progression globale</span>
-            <span className="text-sm text-muted-foreground">
-              {completedCount}/{actions.length} actions terminées
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </CardContent>
-      </Card>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher une action..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="TODO">À faire</SelectItem>
-            <SelectItem value="IN_PROGRESS">En cours</SelectItem>
-            <SelectItem value="BLOCKED">Bloquée</SelectItem>
-            <SelectItem value="DONE">Terminée</SelectItem>
-            <SelectItem value="CANCELLED">Annulée</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Priorité" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les priorités</SelectItem>
-            <SelectItem value="CRITICAL">Critique</SelectItem>
-            <SelectItem value="HIGH">Haute</SelectItem>
-            <SelectItem value="MEDIUM">Moyenne</SelectItem>
-            <SelectItem value="LOW">Basse</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={`${sortBy}-${sortOrder}`} onValueChange={(v) => {
-          const [by, order] = v.split('-') as ['date' | 'priority' | 'dueDate', 'asc' | 'desc']
-          setSortBy(by)
-          setSortOrder(order)
-        }}>
-          <SelectTrigger className="w-[180px]">
-            <ArrowUpDown className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Trier par" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="date-desc">Date (récent)</SelectItem>
-            <SelectItem value="date-asc">Date (ancien)</SelectItem>
-            <SelectItem value="priority-desc">Priorité (critique d&apos;abord)</SelectItem>
-            <SelectItem value="priority-asc">Priorité (basse d&apos;abord)</SelectItem>
-            <SelectItem value="dueDate-asc">Échéance (proche d&apos;abord)</SelectItem>
-            <SelectItem value="dueDate-desc">Échéance (lointaine d&apos;abord)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Actions list */}
-      {actions.length === 0 ? (
         <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Aucune action planifiée</h3>
-              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                Créez des actions pour documenter les mesures prises pour atténuer les tensions
-                éthiques détectées.
-              </p>
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Créer une action
-              </Button>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{actions.length}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <List className="h-5 w-5 text-blue-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-3">
-          {filteredActions.length === 0 ? (
+
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Terminées</p>
+                <p className="text-2xl font-bold text-green-600">{completedCount}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={overdueCount > 0 ? 'border-red-200' : ''}>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">En retard</p>
+                <p className={`text-2xl font-bold ${overdueCount > 0 ? 'text-red-600' : ''}`}>
+                  {overdueCount}
+                </p>
+              </div>
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                overdueCount > 0 ? 'bg-red-100' : 'bg-gray-100'
+              }`}>
+                <AlertCircle className={`h-5 w-5 ${overdueCount > 0 ? 'text-red-600' : 'text-gray-500'}`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs: List and Calendar views */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="list" className="gap-2">
+            <List className="h-4 w-4" />
+            Liste
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Calendrier
+          </TabsTrigger>
+        </TabsList>
+
+        {/* List View */}
+        <TabsContent value="list" className="mt-4 space-y-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher une action..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="TODO">À faire</SelectItem>
+                <SelectItem value="IN_PROGRESS">En cours</SelectItem>
+                <SelectItem value="BLOCKED">Bloquée</SelectItem>
+                <SelectItem value="DONE">Terminée</SelectItem>
+                <SelectItem value="CANCELLED">Annulée</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Priorité" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes</SelectItem>
+                <SelectItem value="CRITICAL">Critique</SelectItem>
+                <SelectItem value="HIGH">Haute</SelectItem>
+                <SelectItem value="MEDIUM">Moyenne</SelectItem>
+                <SelectItem value="LOW">Basse</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={`${sortBy}-${sortOrder}`} onValueChange={(v) => {
+              const [by, order] = v.split('-') as ['date' | 'priority' | 'dueDate', 'asc' | 'desc']
+              setSortBy(by)
+              setSortOrder(order)
+            }}>
+              <SelectTrigger className="w-[180px]">
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Date (récent)</SelectItem>
+                <SelectItem value="date-asc">Date (ancien)</SelectItem>
+                <SelectItem value="priority-desc">Priorité (critique)</SelectItem>
+                <SelectItem value="dueDate-asc">Échéance (proche)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Actions list */}
+          {actions.length === 0 ? (
             <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Aucune action correspondant aux filtres
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Aucune action planifiée</h3>
+                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                    Créez des actions pour documenter les mesures prises suite aux arbitrages.
+                  </p>
+                  <Button onClick={() => handleOpenDialog()}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Créer une action
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : (
-            filteredActions.map((action) => {
-              const overdue = isOverdue(action)
-              return (
-                <Card
-                  key={action.id}
-                  className={`hover:shadow-md transition-shadow ${
-                    overdue ? 'border-red-300 bg-red-50/30' : ''
-                  }`}
-                >
-                  <CardContent className="py-4">
-                    <div className="flex items-start gap-4">
-                      <Checkbox
-                        checked={action.status === 'DONE'}
-                        onCheckedChange={() => handleToggleStatus(action)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3
-                            className={`font-medium ${
-                              action.status === 'DONE' ? 'line-through text-muted-foreground' : ''
-                            }`}
-                          >
-                            {action.title}
-                          </h3>
-                          <Badge className={priorityColors[action.priority]}>
-                            {priorityLabels[action.priority]}
-                          </Badge>
-                          <Badge className={statusColors[action.status]}>
-                            {statusLabels[action.status]}
-                          </Badge>
-                          <Badge variant="outline">{categoryLabels[action.category]}</Badge>
-                          {overdue && (
-                            <Badge variant="destructive" className="gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              En retard
-                            </Badge>
-                          )}
-                        </div>
-                        {action.description && (
-                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                            {action.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          {action.dueDate && (
-                            <span className={`flex items-center gap-1 ${overdue ? 'text-red-600 font-medium' : ''}`}>
-                              <Calendar className={`h-3 w-3 ${overdue ? 'text-red-600' : ''}`} />
-                              {new Date(action.dueDate).toLocaleDateString('fr-FR')}
-                            </span>
-                          )}
-                          {action.assignee && (
-                            <span className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {action.assignee}
-                            </span>
-                          )}
-                          {action.tension && (
-                            <Link
-                              href={`/${siaId}/tensions/${action.tension.id}`}
-                              className="flex items-center gap-1 text-primary hover:underline"
-                            >
-                              <AlertTriangle className="h-3 w-3" />
-                              Tension liée
-                              <ArrowUpRight className="h-3 w-3" />
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenDialog(action)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleDeleteAction(action.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+            <div className="space-y-3">
+              {filteredActions.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    Aucune action correspondant aux filtres
                   </CardContent>
                 </Card>
-              )
-            })
+              ) : (
+                filteredActions.map((action) => (
+                  <ActionCard
+                    key={action.id}
+                    action={action}
+                    siaId={siaId}
+                    isOverdue={isOverdue(action)}
+                    onToggle={() => handleToggleStatus(action)}
+                    onEdit={() => handleOpenDialog(action)}
+                    onDelete={() => handleDeleteAction(action.id)}
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Calendar View */}
+        <TabsContent value="calendar" className="mt-4 space-y-6">
+          {/* Overdue */}
+          {calendarData.overdue.length > 0 && (
+            <Card className="border-red-200 bg-red-50/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2 text-red-700">
+                  <AlertCircle className="h-4 w-4" />
+                  En retard ({calendarData.overdue.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {calendarData.overdue.map(action => (
+                  <CalendarActionItem key={action.id} action={action} siaId={siaId} />
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* This Week */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="h-4 w-4 text-orange-500" />
+                Cette semaine ({calendarData.thisWeek.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {calendarData.thisWeek.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Aucune échéance cette semaine
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {calendarData.thisWeek.map(action => (
+                    <CalendarActionItem key={action.id} action={action} siaId={siaId} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* This Month */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-blue-500" />
+                Ce mois ({calendarData.thisMonth.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {calendarData.thisMonth.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Aucune échéance ce mois
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {calendarData.thisMonth.map(action => (
+                    <CalendarActionItem key={action.id} action={action} siaId={siaId} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Later */}
+          {calendarData.later.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-gray-500" />
+                  Plus tard ({calendarData.later.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {calendarData.later.map(action => (
+                  <CalendarActionItem key={action.id} action={action} siaId={siaId} />
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No due date */}
+          {calendarData.noDueDate.length > 0 && (
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2 text-muted-foreground">
+                  Sans échéance ({calendarData.noDueDate.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {calendarData.noDueDate.map(action => (
+                  <CalendarActionItem key={action.id} action={action} siaId={siaId} showDueDate={false} />
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        if (!open) handleCloseDialog()
+        else setIsDialogOpen(true)
+      }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{editingAction ? 'Modifier l\'action' : 'Créer une action'}</DialogTitle>
+            <DialogDescription>
+              {editingAction
+                ? 'Modifiez les détails de l\'action'
+                : 'Ajoutez une nouvelle action de mitigation'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre</Label>
+              <Input
+                id="title"
+                value={newAction.title}
+                onChange={(e) => setNewAction({ ...newAction, title: e.target.value })}
+                placeholder="Ex: Implémenter le chiffrement des données"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newAction.description}
+                onChange={(e) => setNewAction({ ...newAction, description: e.target.value })}
+                placeholder="Décrivez l'action à réaliser..."
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Priorité</Label>
+                <Select
+                  value={newAction.priority}
+                  onValueChange={(v) => setNewAction({ ...newAction, priority: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">Basse</SelectItem>
+                    <SelectItem value="MEDIUM">Moyenne</SelectItem>
+                    <SelectItem value="HIGH">Haute</SelectItem>
+                    <SelectItem value="CRITICAL">Critique</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Catégorie</Label>
+                <Select
+                  value={newAction.category}
+                  onValueChange={(v) => setNewAction({ ...newAction, category: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Échéance</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={newAction.dueDate}
+                  onChange={(e) => setNewAction({ ...newAction, dueDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="assignee">Responsable</Label>
+                <Input
+                  id="assignee"
+                  value={newAction.assignee}
+                  onChange={(e) => setNewAction({ ...newAction, assignee: e.target.value })}
+                  placeholder="Nom du responsable"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDialog}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveAction} disabled={saving}>
+              {saving
+                ? (editingAction ? 'Enregistrement...' : 'Création...')
+                : (editingAction ? 'Enregistrer' : 'Créer l\'action')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+function ActionCard({
+  action,
+  siaId,
+  isOverdue,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  action: Action
+  siaId: string
+  isOverdue: boolean
+  onToggle: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  return (
+    <Card className={`hover:shadow-md transition-shadow ${isOverdue ? 'border-red-300 bg-red-50/30' : ''}`}>
+      <CardContent className="py-4">
+        <div className="flex items-start gap-4">
+          <Checkbox
+            checked={action.status === 'DONE'}
+            onCheckedChange={onToggle}
+            className="mt-1"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h3 className={`font-medium ${action.status === 'DONE' ? 'line-through text-muted-foreground' : ''}`}>
+                {action.title}
+              </h3>
+              <Badge className={priorityColors[action.priority]}>
+                {priorityLabels[action.priority]}
+              </Badge>
+              <Badge className={statusColors[action.status]}>
+                {statusLabels[action.status]}
+              </Badge>
+              {isOverdue && (
+                <Badge variant="destructive" className="gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  En retard
+                </Badge>
+              )}
+            </div>
+            {action.description && (
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                {action.description}
+              </p>
+            )}
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              {action.dueDate && (
+                <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 font-medium' : ''}`}>
+                  <Calendar className="h-3 w-3" />
+                  {new Date(action.dueDate).toLocaleDateString('fr-FR')}
+                </span>
+              )}
+              {action.assignee && (
+                <span className="flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  {action.assignee}
+                </span>
+              )}
+              {action.tension && (
+                <Link
+                  href={`/${siaId}/tensions/${action.tension.id}`}
+                  className="flex items-center gap-1 text-primary hover:underline"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  Tension liée
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              )}
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Modifier
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onClick={onDelete}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Supprimer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function CalendarActionItem({ action, siaId, showDueDate = true }: { action: Action; siaId: string; showDueDate?: boolean }) {
+  return (
+    <Link
+      href={`/${siaId}/actions?action=${action.id}`}
+      className="flex items-center gap-3 p-3 rounded-lg border bg-white hover:shadow-md transition-all"
+    >
+      <div className={`w-2 h-2 rounded-full ${
+        action.priority === 'CRITICAL' ? 'bg-red-500' :
+        action.priority === 'HIGH' ? 'bg-orange-500' :
+        action.priority === 'MEDIUM' ? 'bg-yellow-500' :
+        'bg-blue-500'
+      }`} />
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm truncate">{action.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          {showDueDate && action.dueDate && (
+            <span className="text-xs text-muted-foreground">
+              {new Date(action.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+            </span>
+          )}
+          {action.assignee && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <User className="h-3 w-3" />
+              {action.assignee}
+            </span>
           )}
         </div>
-      )}
-
-      {/* Next Step Prompt when all actions are completed */}
-      {actions.length > 0 && progress === 100 && (
-        <NextStepPrompt
-          siaId={siaId}
-          step="export"
-          title="Suivi complété"
-          description="Toutes vos actions ont été réalisées. Vous pouvez maintenant exporter votre analyse complète et créer une version de référence."
-          variant="success"
-        />
-      )}
-    </div>
+      </div>
+      <Badge className={priorityColors[action.priority]} variant="secondary">
+        {priorityLabels[action.priority]}
+      </Badge>
+      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+    </Link>
   )
 }

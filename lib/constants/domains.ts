@@ -155,8 +155,8 @@ export const CIRCLE_2_DOMAINS = {
       'Documentation technique à jour',
     ],
   },
-  ACCOUNTABILITY: {
-    id: 'ACCOUNTABILITY',
+  RESPONSIBILITY: {
+    id: 'RESPONSIBILITY',
     label: 'Responsabilité',
     icon: 'Handshake',
     color: '#7C3AED', // purple

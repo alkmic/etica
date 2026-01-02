@@ -54,7 +54,7 @@ const domainIcons: Record<string, React.ElementType> = {
   SECURITY: Shield,
   RECOURSE: MessageSquare,
   SUSTAINABILITY: Leaf,
-  ACCOUNTABILITY: Users,
+  RESPONSIBILITY: Users,
 }
 
 const confidenceColors: Record<string, { bg: string; text: string; badge: string }> = {

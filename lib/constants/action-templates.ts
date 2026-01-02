@@ -140,7 +140,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Définir des critères qui déclenchent une validation humaine.',
     category: 'HUMAN_CONTROL',
     effort: 'MEDIUM',
-    impactDomains: ['RECOURSE', 'ACCOUNTABILITY'],
+    impactDomains: ['RECOURSE', 'RESPONSIBILITY'],
     checklist: [
       'Définir les critères de seuil',
       'Implémenter la logique de routage',
@@ -216,7 +216,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Intégrer le suivi de métriques de fairness dans le monitoring.',
     category: 'TECHNICAL',
     effort: 'LARGE',
-    impactDomains: ['EQUITY', 'ACCOUNTABILITY'],
+    impactDomains: ['EQUITY', 'RESPONSIBILITY'],
     checklist: [
       'Choisir les métriques appropriées',
       'Implémenter le calcul',
@@ -230,7 +230,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Mettre en place un calendrier d\'audit du système.',
     category: 'AUDIT',
     effort: 'MEDIUM',
-    impactDomains: ['ACCOUNTABILITY'],
+    impactDomains: ['RESPONSIBILITY'],
     checklist: [
       'Définir la fréquence',
       'Établir le périmètre de l\'audit',
@@ -244,7 +244,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Surveiller le comportement du système en production.',
     category: 'TECHNICAL',
     effort: 'MEDIUM',
-    impactDomains: ['SECURITY', 'ACCOUNTABILITY'],
+    impactDomains: ['SECURITY', 'RESPONSIBILITY'],
     checklist: [
       'Définir les KPIs à suivre',
       'Implémenter les sondes',
@@ -260,7 +260,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Clarifier les responsabilités pour chaque aspect du système.',
     category: 'ORGANIZATIONAL',
     effort: 'SMALL',
-    impactDomains: ['ACCOUNTABILITY'],
+    impactDomains: ['RESPONSIBILITY'],
     checklist: [
       'Lister les activités clés',
       'Identifier les parties prenantes',
@@ -274,7 +274,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'S\'assurer que les personnes utilisant le système comprennent ses limites.',
     category: 'ORGANIZATIONAL',
     effort: 'MEDIUM',
-    impactDomains: ['ACCOUNTABILITY', 'EQUITY'],
+    impactDomains: ['RESPONSIBILITY', 'EQUITY'],
     checklist: [
       'Identifier le public cible',
       'Créer le contenu de formation',
@@ -288,7 +288,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Établir la procédure en cas de problème éthique.',
     category: 'ORGANIZATIONAL',
     effort: 'MEDIUM',
-    impactDomains: ['ACCOUNTABILITY', 'SECURITY'],
+    impactDomains: ['RESPONSIBILITY', 'SECURITY'],
     checklist: [
       'Définir ce qui constitue un incident',
       'Établir la chaîne d\'escalade',
@@ -332,7 +332,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Lancer par phases pour détecter les problèmes tôt.',
     category: 'DESIGN',
     effort: 'MEDIUM',
-    impactDomains: ['SECURITY', 'ACCOUNTABILITY'],
+    impactDomains: ['SECURITY', 'RESPONSIBILITY'],
     checklist: [
       'Définir les phases (%, critères)',
       'Établir les critères de passage',

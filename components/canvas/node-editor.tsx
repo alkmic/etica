@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, User, Bot, Server, Building2 } from 'lucide-react'
+import { X, User, Bot, Server, Building2, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -31,6 +32,10 @@ interface NodeEditorProps {
       dataTypes?: string[]
       inputCount?: number
       outputCount?: number
+      isExternal?: boolean
+      provider?: string
+      location?: string
+      opacity?: 'transparent' | 'explainable' | 'opaque'
     }
   }
   onUpdate: (id: string, data: Partial<{
@@ -41,6 +46,10 @@ interface NodeEditorProps {
     dataTypes: string[]
     inputCount: number
     outputCount: number
+    isExternal: boolean
+    provider: string
+    location: string
+    opacity: 'transparent' | 'explainable' | 'opaque'
   }>) => void
   onClose: () => void
   onDelete: (id: string) => void
@@ -48,8 +57,8 @@ interface NodeEditorProps {
 
 const nodeTypeOptions: Array<{ value: NodeType; label: string; description: string }> = [
   { value: 'SOURCE', label: 'Source de données', description: 'Point de collecte ou origine des données' },
-  { value: 'TREATMENT', label: 'Traitement', description: 'Transformation ou analyse des données' },
-  { value: 'DECISION', label: 'Décision', description: 'Point de décision algorithmique' },
+  { value: 'TREATMENT', label: 'Traitement / IA', description: 'Transformation, analyse ou modèle IA' },
+  { value: 'DECISION', label: 'Point de décision', description: 'Génère une décision ou recommandation' },
   { value: 'ACTION', label: 'Action', description: 'Effet ou action résultante' },
   { value: 'STAKEHOLDER', label: 'Partie prenante', description: 'Personne ou groupe impacté' },
   { value: 'STORAGE', label: 'Stockage', description: 'Conservation des données' },
@@ -62,6 +71,12 @@ const entityTypeOptions: Array<{ value: NodeEntityType; label: string; icon: Rea
   { value: 'ORG', label: 'Organisation', icon: Building2 },
 ]
 
+const opacityOptions = [
+  { value: 'transparent', label: 'Transparent', description: 'Règles explicites, décision compréhensible' },
+  { value: 'explainable', label: 'Explicable', description: 'Boîte noire avec explications post-hoc' },
+  { value: 'opaque', label: 'Opaque', description: 'Fonctionnement non explicable' },
+]
+
 export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProps) {
   const [label, setLabel] = useState(node.data.label)
   const [type, setType] = useState<NodeType>(node.data.type)
@@ -70,6 +85,12 @@ export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProp
   const [dataTypes, setDataTypes] = useState<string[]>(node.data.dataTypes || [])
   const [inputCount, setInputCount] = useState(node.data.inputCount || 1)
   const [outputCount, setOutputCount] = useState(node.data.outputCount || 1)
+  const [isExternal, setIsExternal] = useState(node.data.isExternal || false)
+  const [provider, setProvider] = useState(node.data.provider || '')
+  const [location, setLocation] = useState(node.data.location || '')
+  const [opacity, setOpacity] = useState<'transparent' | 'explainable' | 'opaque'>(
+    node.data.opacity || 'transparent'
+  )
 
   useEffect(() => {
     setLabel(node.data.label)
@@ -79,6 +100,10 @@ export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProp
     setDataTypes(node.data.dataTypes || [])
     setInputCount(node.data.inputCount || 1)
     setOutputCount(node.data.outputCount || 1)
+    setIsExternal(node.data.isExternal || false)
+    setProvider(node.data.provider || '')
+    setLocation(node.data.location || '')
+    setOpacity(node.data.opacity || 'transparent')
   }, [node])
 
   const handleSave = () => {
@@ -90,6 +115,10 @@ export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProp
       dataTypes,
       inputCount,
       outputCount,
+      isExternal,
+      provider: isExternal ? provider : '',
+      location: isExternal ? location : '',
+      opacity,
     })
   }
 
@@ -101,10 +130,15 @@ export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProp
     )
   }
 
+  // Show external fields for AI, INFRA, or TREATMENT nodes
+  const showExternalFields = type === 'TREATMENT' || entityType === 'AI' || entityType === 'INFRA'
+  // Show opacity for AI/ML nodes
+  const showOpacity = type === 'TREATMENT' || type === 'DECISION' || entityType === 'AI'
+
   return (
     <div className="absolute top-4 right-4 z-10 w-96 bg-white rounded-lg shadow-xl border">
       <div className="flex items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
-        <h3 className="font-semibold">Modifier l&apos;élément</h3>
+        <h3 className="font-semibold">Modifier le composant</h3>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
@@ -120,12 +154,12 @@ export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProp
                 id="label"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                placeholder="Nom de l'élément"
+                placeholder="Nom du composant"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Fonction dans le flux</Label>
+              <Label htmlFor="type">Fonction</Label>
               <Select value={type} onValueChange={(v) => setType(v as NodeType)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -144,10 +178,7 @@ export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProp
             </div>
 
             <div className="space-y-2">
-              <Label>Opérateur (optionnel)</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Qui opère ou contrôle ce composant ?
-              </p>
+              <Label>Nature du composant</Label>
               <div className="grid grid-cols-4 gap-2">
                 {entityTypeOptions.map((option) => {
                   const Icon = option.icon
@@ -172,15 +203,92 @@ export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProp
             </div>
           </div>
 
+          {/* External service (for AI, INFRA, TREATMENT) */}
+          {showExternalFields && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4" />
+                      Service externe
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      API tierce, cloud, fournisseur externe
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isExternal}
+                    onCheckedChange={setIsExternal}
+                  />
+                </div>
+
+                {isExternal && (
+                  <div className="space-y-3 pl-1 border-l-2 border-primary/20 ml-2">
+                    <div className="space-y-2 pl-3">
+                      <Label htmlFor="provider">Fournisseur</Label>
+                      <Input
+                        id="provider"
+                        value={provider}
+                        onChange={(e) => setProvider(e.target.value)}
+                        placeholder="Ex: OpenAI, AWS, Google..."
+                      />
+                    </div>
+                    <div className="space-y-2 pl-3">
+                      <Label htmlFor="location">Localisation</Label>
+                      <Select value={location} onValueChange={setLocation}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="eu">Union Européenne</SelectItem>
+                          <SelectItem value="france">France</SelectItem>
+                          <SelectItem value="us">États-Unis</SelectItem>
+                          <SelectItem value="other">Autre / Multiple</SelectItem>
+                          <SelectItem value="unknown">Inconnu</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Opacity for AI/Decision nodes */}
+          {showOpacity && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <Label>Explicabilité</Label>
+                <p className="text-xs text-muted-foreground">
+                  Peut-on expliquer comment les décisions sont prises ?
+                </p>
+                <Select value={opacity} onValueChange={(v) => setOpacity(v as typeof opacity)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opacityOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div>
+                          <span>{option.label}</span>
+                          <span className="block text-xs text-muted-foreground">{option.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
           <Separator />
 
           {/* Connections */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Connexions</Label>
-            <p className="text-xs text-muted-foreground">
-              Configurez le nombre d&apos;entrées et sorties possibles
-            </p>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -227,8 +335,8 @@ export function NodeEditor({ node, onUpdate, onClose, onDelete }: NodeEditorProp
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Décrivez le rôle de cet élément..."
-              rows={3}
+              placeholder="Décrivez le rôle de ce composant..."
+              rows={2}
             />
           </div>
 

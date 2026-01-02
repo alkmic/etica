@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
             SECURITY: 0,
             RECOURSE: 0,
             SUSTAINABILITY: 0,
-            ACCOUNTABILITY: 0,
+            RESPONSIBILITY: 0,
           },
         },
       },

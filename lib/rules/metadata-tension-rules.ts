@@ -81,7 +81,7 @@ const METADATA_RULES: MetadataRule[] = [
     condition: (sia) => sia.decisionType === 'ASSISTED_DECISION' || sia.decisionType === 'AUTO_DECISION',
     getReason: () => 'Les décisions algorithmiques doivent être transparentes et explicables pour les personnes concernées.',
     confidence: 'MEDIUM',
-    impactedDomains: ['TRANSPARENCY', 'ACCOUNTABILITY'],
+    impactedDomains: ['TRANSPARENCY', 'RESPONSIBILITY'],
     suggestedQuestions: [
       'Les critères de décision sont-ils documentés ?',
       'Les personnes sont-elles informées du fonctionnement ?',
@@ -97,7 +97,7 @@ const METADATA_RULES: MetadataRule[] = [
     condition: (sia) => sia.hasVulnerable,
     getReason: () => 'Votre système impacte des populations vulnérables. Une attention particulière à l\'équité est nécessaire.',
     confidence: 'HIGH',
-    impactedDomains: ['EQUITY', 'ACCOUNTABILITY'],
+    impactedDomains: ['EQUITY', 'RESPONSIBILITY'],
     suggestedQuestions: [
       'Le système a-t-il été testé pour les biais ?',
       'Des accommodements sont-ils prévus ?',
@@ -181,7 +181,7 @@ const METADATA_RULES: MetadataRule[] = [
                         sia.decisionType !== 'INFORMATIVE',
     getReason: () => 'Dans le domaine public, les décisions algorithmiques requièrent des garanties de recours renforcées.',
     confidence: 'HIGH',
-    impactedDomains: ['RECOURSE', 'ACCOUNTABILITY', 'EQUITY'],
+    impactedDomains: ['RECOURSE', 'RESPONSIBILITY', 'EQUITY'],
     suggestedQuestions: [
       'Un agent humain valide-t-il les décisions ?',
       'Le droit au recours est-il garanti ?',

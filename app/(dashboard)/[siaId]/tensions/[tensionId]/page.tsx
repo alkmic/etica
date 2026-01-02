@@ -97,7 +97,7 @@ const domainIcons: Record<string, React.ReactNode> = {
   RECOURSE: <MessageSquare className="h-5 w-5" />,
   // Cercle 2 : Organisation
   CONTROL: <Sparkles className="h-5 w-5" />,
-  ACCOUNTABILITY: <ClipboardCheck className="h-5 w-5" />,
+  RESPONSIBILITY: <ClipboardCheck className="h-5 w-5" />,
   SOVEREIGNTY: <Target className="h-5 w-5" />,
   // Cercle 3 : Société
   SUSTAINABILITY: <Leaf className="h-5 w-5" />,

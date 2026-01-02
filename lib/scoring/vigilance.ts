@@ -94,8 +94,8 @@ const FLOW_NATURE_DOMAIN_MAPPING: Record<string, DomainId[]> = {
   DECISION: ['TRANSPARENCY', 'RECOURSE', 'EQUITY', 'AUTONOMY'],
   RECOMMENDATION: ['AUTONOMY', 'TRANSPARENCY'],
   NOTIFICATION: ['TRANSPARENCY'],
-  LEARNING: ['SUSTAINABILITY', 'ACCOUNTABILITY'],
-  CONTROL: ['ACCOUNTABILITY'],
+  LEARNING: ['SUSTAINABILITY', 'RESPONSIBILITY'],
+  CONTROL: ['RESPONSIBILITY'],
   TRANSFER: ['PRIVACY', 'SECURITY'],
   STORAGE: ['PRIVACY', 'SECURITY'],
 }
@@ -109,7 +109,7 @@ const PROFILE_WEIGHTS: Record<DomainId, Record<string, number>> = {
   SECURITY: { irreversibility: 0.5, scalability: 0.5 },
   RECOURSE: { irreversibility: 0.4, agentivity: 0.3, opacity: 0.3 },
   SUSTAINABILITY: { scalability: 0.8, irreversibility: 0.2 },
-  ACCOUNTABILITY: { opacity: 0.5, irreversibility: 0.3, scalability: 0.2 },
+  RESPONSIBILITY: { opacity: 0.5, irreversibility: 0.3, scalability: 0.2 },
 }
 
 /**

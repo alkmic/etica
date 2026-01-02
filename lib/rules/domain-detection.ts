@@ -390,7 +390,7 @@ export function detectEthicalDomains(context: DomainDetectionContext): DetectedD
   }
 
   // =========================================================================
-  // ACCOUNTABILITY Domain Detection
+  // RESPONSIBILITY Domain Detection
   // =========================================================================
   const accountabilityReasons: string[] = []
   let accountabilityConfidence: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW'
@@ -421,12 +421,12 @@ export function detectEthicalDomains(context: DomainDetectionContext): DetectedD
 
   if (accountabilityReasons.length > 0) {
     detectedDomains.push({
-      id: 'ACCOUNTABILITY',
-      label: DOMAINS.ACCOUNTABILITY.label,
+      id: 'RESPONSIBILITY',
+      label: DOMAINS.RESPONSIBILITY.label,
       confidence: accountabilityConfidence,
       reasons: accountabilityReasons,
-      color: DOMAINS.ACCOUNTABILITY.color,
-      icon: DOMAINS.ACCOUNTABILITY.icon,
+      color: DOMAINS.RESPONSIBILITY.color,
+      icon: DOMAINS.RESPONSIBILITY.icon,
     })
   }
 

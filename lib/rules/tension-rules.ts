@@ -264,7 +264,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'TREATMENT', 'STAKEHOLDER'),
     confidence: 'MEDIUM',
-    impactedDomains: ['TRANSPARENCY', 'ACCOUNTABILITY'],
+    impactedDomains: ['TRANSPARENCY', 'RESPONSIBILITY'],
     suggestedActions: ['EXPLAINABILITY_LAYER', 'TRANSPARENCY_FACTORS'],
   },
 
@@ -294,7 +294,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'ACTION'),
     confidence: 'MEDIUM',
-    impactedDomains: ['SECURITY', 'ACCOUNTABILITY'],
+    impactedDomains: ['SECURITY', 'RESPONSIBILITY'],
     suggestedActions: ['MONITORING', 'INCIDENT_PROCESS', 'OVERRIDE_CAPABILITY'],
   },
 
@@ -313,7 +313,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
     confidence: 'HIGH',
-    impactedDomains: ['EQUITY', 'ACCOUNTABILITY'],
+    impactedDomains: ['EQUITY', 'RESPONSIBILITY'],
     suggestedActions: ['BIAS_TESTING', 'FAIRNESS_METRICS', 'CASE_BY_CASE', 'ACCOMMODATION'],
   },
 
@@ -414,7 +414,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'TREATMENT'),
     confidence: 'MEDIUM',
-    impactedDomains: ['TRANSPARENCY', 'ACCOUNTABILITY'],
+    impactedDomains: ['TRANSPARENCY', 'RESPONSIBILITY'],
     suggestedActions: ['EXPLAINABILITY_LAYER', 'DOCUMENTATION'],
   },
 
@@ -467,7 +467,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'DECISION', 'ACTION'),
     confidence: 'HIGH',
-    impactedDomains: ['RECOURSE', 'ACCOUNTABILITY'],
+    impactedDomains: ['RECOURSE', 'RESPONSIBILITY'],
     suggestedActions: ['HUMAN_REVIEW_THRESHOLD', 'OVERRIDE_CAPABILITY', 'MONITORING'],
   },
 
@@ -484,7 +484,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
     confidence: 'MEDIUM',
-    impactedDomains: ['RECOURSE', 'ACCOUNTABILITY'],
+    impactedDomains: ['RECOURSE', 'RESPONSIBILITY'],
     suggestedActions: ['CONTACT_HUMAN', 'APPEAL_PROCESS'],
   },
 
@@ -546,7 +546,7 @@ const DETECTION_RULES: DetectionRule[] = [
   },
 
   // ===========================================================================
-  // CATEGORY 7: ACCOUNTABILITY & GOVERNANCE
+  // CATEGORY 7: RESPONSIBILITY & GOVERNANCE
   // ===========================================================================
 
   // R025: Multi-actor system
@@ -560,7 +560,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'STAKEHOLDER'),
     confidence: 'LOW',
-    impactedDomains: ['ACCOUNTABILITY'],
+    impactedDomains: ['RESPONSIBILITY'],
     suggestedActions: ['DOCUMENTATION', 'MONITORING'],
   },
 
@@ -680,7 +680,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
     confidence: 'HIGH',
-    impactedDomains: ['SECURITY', 'PRIVACY', 'ACCOUNTABILITY'],
+    impactedDomains: ['SECURITY', 'PRIVACY', 'RESPONSIBILITY'],
     suggestedActions: ['HUMAN_REVIEW_THRESHOLD', 'MONITORING', 'INCIDENT_PROCESS', 'STAGED_ROLLOUT'],
   },
 
@@ -809,7 +809,7 @@ const DETECTION_RULES: DetectionRule[] = [
     getRelatedEdges: (_sia, _nodes, edges) =>
       edges.filter(e => (e.irreversibility ?? 0) >= 3).map(e => e.id),
     confidence: 'HIGH',
-    impactedDomains: ['RECOURSE', 'ACCOUNTABILITY'],
+    impactedDomains: ['RECOURSE', 'RESPONSIBILITY'],
     suggestedActions: ['HUMAN_REVIEW_THRESHOLD', 'APPEAL_PROCESS', 'OVERRIDE_CAPABILITY'],
   },
 
@@ -846,7 +846,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
     confidence: 'LOW',
-    impactedDomains: ['ACCOUNTABILITY'],
+    impactedDomains: ['RESPONSIBILITY'],
     suggestedActions: ['DOCUMENTATION', 'TRANSPARENCY_NOTICE'],
   },
 
@@ -863,7 +863,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
     confidence: 'LOW',
-    impactedDomains: ['ACCOUNTABILITY'],
+    impactedDomains: ['RESPONSIBILITY'],
     suggestedActions: ['DOCUMENTATION', 'MONITORING'],
   },
 

@@ -80,7 +80,7 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
     title: 'Performance vs Équité',
     shortTitle: 'Performance / Équité',
     description: 'L\'optimisation de la performance peut créer ou amplifier des biais discriminatoires.',
-    domains: ['EQUITY', 'ACCOUNTABILITY'],
+    domains: ['EQUITY', 'RESPONSIBILITY'],
     examples: [
       'Modèle de recrutement reproduisant les biais historiques',
       'Scoring de risque défavorisant certains quartiers',
@@ -120,7 +120,7 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
     title: 'Précision vs Minimisation',
     shortTitle: 'Précision / Minimisation',
     description: 'La qualité du modèle peut nécessiter plus de données que le principe de minimisation ne le permet.',
-    domains: ['PRIVACY', 'ACCOUNTABILITY'],
+    domains: ['PRIVACY', 'RESPONSIBILITY'],
     examples: [
       'Enrichissement de profil pour meilleures recommandations',
       'Historique long pour prédiction précise',
@@ -140,7 +140,7 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
     title: 'Innovation vs Précaution',
     shortTitle: 'Innovation / Précaution',
     description: 'Le déploiement de nouvelles technologies peut présenter des risques non encore identifiés.',
-    domains: ['SECURITY', 'ACCOUNTABILITY'],
+    domains: ['SECURITY', 'RESPONSIBILITY'],
     examples: [
       'IA générative avec risques de désinformation',
       'Véhicules autonomes en environnement réel',
@@ -180,7 +180,7 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
     title: 'Rapidité vs Réflexion',
     shortTitle: 'Rapidité / Réflexion',
     description: 'L\'exigence de décisions en temps réel peut empêcher une analyse approfondie des cas particuliers.',
-    domains: ['RECOURSE', 'ACCOUNTABILITY'],
+    domains: ['RECOURSE', 'RESPONSIBILITY'],
     examples: [
       'Modération en temps réel',
       'Trading algorithmique',
