@@ -366,9 +366,9 @@ export default function ActionsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Plan d&apos;action</h1>
+          <h1 className="text-2xl font-bold">Suivi</h1>
           <p className="text-muted-foreground">
-            Gérez les mesures de mitigation et d&apos;amélioration
+            Suivez et gérez les mesures de mitigation issues des arbitrages
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
@@ -679,7 +679,7 @@ export default function ActionsPage() {
         <NextStepPrompt
           siaId={siaId}
           step="export"
-          title="Plan d'action complété"
+          title="Suivi complété"
           description="Toutes vos actions ont été réalisées. Vous pouvez maintenant exporter votre analyse complète et créer une version de référence."
           variant="success"
         />

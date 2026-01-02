@@ -92,14 +92,21 @@ interface Sia {
 }
 
 const domainIcons: Record<string, React.ReactNode> = {
+  // Cercle 1 : Personnes
   PRIVACY: <Lock className="h-4 w-4" />,
   EQUITY: <Scale className="h-4 w-4" />,
   TRANSPARENCY: <Eye className="h-4 w-4" />,
   AUTONOMY: <Users className="h-4 w-4" />,
   SECURITY: <Shield className="h-4 w-4" />,
   RECOURSE: <MessageSquare className="h-4 w-4" />,
-  SUSTAINABILITY: <Leaf className="h-4 w-4" />,
+  // Cercle 2 : Organisation
+  CONTROL: <Sparkles className="h-4 w-4" />,
   ACCOUNTABILITY: <ClipboardCheck className="h-4 w-4" />,
+  SOVEREIGNTY: <Map className="h-4 w-4" />,
+  // Cercle 3 : Société
+  SUSTAINABILITY: <Leaf className="h-4 w-4" />,
+  LOYALTY: <CheckCircle2 className="h-4 w-4" />,
+  BALANCE: <TrendingUp className="h-4 w-4" />,
 }
 
 // Severity is now 1-5 in schema

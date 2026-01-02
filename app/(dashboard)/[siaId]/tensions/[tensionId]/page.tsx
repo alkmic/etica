@@ -88,14 +88,21 @@ interface Tension {
 }
 
 const domainIcons: Record<string, React.ReactNode> = {
+  // Cercle 1 : Personnes
   PRIVACY: <Lock className="h-5 w-5" />,
   EQUITY: <Scale className="h-5 w-5" />,
   TRANSPARENCY: <Eye className="h-5 w-5" />,
   AUTONOMY: <Users className="h-5 w-5" />,
   SECURITY: <Shield className="h-5 w-5" />,
   RECOURSE: <MessageSquare className="h-5 w-5" />,
-  SUSTAINABILITY: <Leaf className="h-5 w-5" />,
+  // Cercle 2 : Organisation
+  CONTROL: <Sparkles className="h-5 w-5" />,
   ACCOUNTABILITY: <ClipboardCheck className="h-5 w-5" />,
+  SOVEREIGNTY: <Target className="h-5 w-5" />,
+  // Cercle 3 : Société
+  SUSTAINABILITY: <Leaf className="h-5 w-5" />,
+  LOYALTY: <CheckCircle2 className="h-5 w-5" />,
+  BALANCE: <Workflow className="h-5 w-5" />,
 }
 
 const severityConfig: Record<number, { bg: string; border: string; text: string; label: string }> = {
@@ -198,7 +205,7 @@ export default function TensionDetailPage() {
       if (response.ok) {
         toast({
           title: 'Action ajoutée',
-          description: `"${template.title}" a été ajoutée au plan d'action`,
+          description: `"${template.title}" a été ajoutée au Suivi`,
         })
         // Refresh tension to show linked action
         const tensionResponse = await fetch(`/api/sia/${siaId}/tensions/${tensionId}`)
@@ -773,7 +780,7 @@ export default function TensionDetailPage() {
                 <Button variant="outline" className="w-full" asChild>
                   <Link href={`/${siaId}/actions`}>
                     <FileText className="mr-2 h-4 w-4" />
-                    Voir le plan d'action
+                    Voir le Suivi
                   </Link>
                 </Button>
               </CardContent>

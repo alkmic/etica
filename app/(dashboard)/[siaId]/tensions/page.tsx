@@ -69,14 +69,21 @@ interface Tension {
 }
 
 const domainIcons: Record<string, React.ReactNode> = {
+  // Cercle 1 : Personnes
   PRIVACY: <Lock className="h-4 w-4" />,
   EQUITY: <Scale className="h-4 w-4" />,
   TRANSPARENCY: <Eye className="h-4 w-4" />,
   AUTONOMY: <Users className="h-4 w-4" />,
   SECURITY: <Shield className="h-4 w-4" />,
   RECOURSE: <MessageSquare className="h-4 w-4" />,
-  SUSTAINABILITY: <Leaf className="h-4 w-4" />,
+  // Cercle 2 : Organisation
+  CONTROL: <Sparkles className="h-4 w-4" />,
   ACCOUNTABILITY: <ClipboardCheck className="h-4 w-4" />,
+  SOVEREIGNTY: <MapPin className="h-4 w-4" />,
+  // Cercle 3 : Société
+  SUSTAINABILITY: <Leaf className="h-4 w-4" />,
+  LOYALTY: <CheckCircle2 className="h-4 w-4" />,
+  BALANCE: <Target className="h-4 w-4" />,
 }
 
 const severityConfig: Record<number, { bg: string; border: string; text: string; label: string; badgeBg: string }> = {
@@ -595,7 +602,7 @@ export default function TensionsPage() {
           siaId={siaId}
           step="actions"
           title="Toutes les tensions ont été traitées"
-          description="Excellent travail ! Vous avez arbitré toutes les tensions. Il est maintenant temps de mettre en œuvre les mesures correctives dans votre plan d'action."
+          description="Excellent travail ! Vous avez arbitré toutes les tensions. Il est maintenant temps de mettre en œuvre les mesures correctives dans le Suivi."
           variant="success"
         />
       )}

@@ -18,7 +18,7 @@ const navigation = [
   { name: 'Tableau de bord', href: '', icon: LayoutDashboard },
   { name: 'Cartographie', href: '/map', icon: Map },
   { name: 'Tensions', href: '/tensions', icon: AlertTriangle },
-  { name: 'Actions', href: '/actions', icon: CheckCircle2 },
+  { name: 'Suivi', href: '/actions', icon: CheckCircle2 },
   { name: 'Documents', href: '/files', icon: FileText },
   { name: 'Paramètres', href: '/settings', icon: Settings },
 ]

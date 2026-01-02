@@ -48,10 +48,10 @@ const stepConfig: Record<StepType, {
   },
   actions: {
     icon: CheckSquare,
-    defaultTitle: 'Prochaine étape : Plan d\'action',
-    defaultDescription: 'Définissez les mesures correctives pour atténuer les tensions identifiées.',
+    defaultTitle: 'Prochaine étape : Suivi',
+    defaultDescription: 'Définissez et suivez les mesures correctives pour atténuer les tensions identifiées.',
     href: '/actions',
-    buttonLabel: 'Créer des actions',
+    buttonLabel: 'Accéder au Suivi',
   },
   export: {
     icon: FileText,
