@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -18,25 +18,26 @@ import {
   CheckCircle2,
   Clock,
   FileText,
-  Lock,
-  Scale,
-  Eye,
-  Users,
-  Shield,
-  MessageSquare,
-  Leaf,
-  ClipboardCheck,
   Map,
   Plus,
   TrendingUp,
   AlertCircle,
+  LayoutGrid,
+  Layers,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DOMAINS } from '@/lib/constants/domains'
+import { CriticalityMatrix, CriticalityStats } from '@/components/criticality-matrix'
+import {
+  ETHICAL_DOMAINS,
+  CIRCLES,
+  getDomainsByCircle,
+  type EthicalDomain,
+  type Circle,
+} from '@/lib/constants/ethical-domains'
 
 interface Sia {
   id: string
@@ -63,6 +64,7 @@ interface Sia {
     targetNode: { label: string }
     dataTypes: string[]
   }>
+  // Legacy tensions for backward compatibility
   tensions: Array<{
     id: string
     patternId: string
@@ -77,6 +79,21 @@ interface Sia {
       justification: string
     }>
   }>
+  // New dilemmas
+  dilemmas: Array<{
+    id: string
+    ruleId: string
+    ruleName: string
+    ruleFamily: string
+    domainA: EthicalDomain
+    domainB: EthicalDomain
+    formulation: string
+    severity: number
+    maturity: number
+    arbitration: {
+      decision: string
+    } | null
+  }>
   actions: Array<{
     id: string
     title: string
@@ -85,24 +102,6 @@ interface Sia {
   }>
   createdAt: string
   updatedAt: string
-}
-
-const domainIcons: Record<string, React.ReactNode> = {
-  PRIVACY: <Lock className="h-4 w-4" />,
-  EQUITY: <Scale className="h-4 w-4" />,
-  TRANSPARENCY: <Eye className="h-4 w-4" />,
-  AUTONOMY: <Users className="h-4 w-4" />,
-  SECURITY: <Shield className="h-4 w-4" />,
-  RECOURSE: <MessageSquare className="h-4 w-4" />,
-  SUSTAINABILITY: <Leaf className="h-4 w-4" />,
-  ACCOUNTABILITY: <ClipboardCheck className="h-4 w-4" />,
-}
-
-const severityColors: Record<string, string> = {
-  LOW: 'bg-blue-100 text-blue-800',
-  MEDIUM: 'bg-yellow-100 text-yellow-800',
-  HIGH: 'bg-orange-100 text-orange-800',
-  CRITICAL: 'bg-red-100 text-red-800',
 }
 
 const statusColors: Record<string, string> = {
@@ -154,6 +153,18 @@ export default function SiaDashboardPage() {
     }
   }, [siaId])
 
+  // Matrix data for CriticalityMatrix component
+  const matrixData = useMemo(() => {
+    if (!sia?.dilemmas) return []
+    return sia.dilemmas.map((d) => ({
+      id: d.id,
+      severity: d.severity,
+      maturity: d.maturity,
+      name: d.formulation,
+      ruleName: d.ruleName,
+    }))
+  }, [sia?.dilemmas])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -186,17 +197,22 @@ export default function SiaDashboardPage() {
     )
   }
 
-  // Prepare radar chart data
-  const radarData = Object.entries(DOMAINS).map(([key, domain]) => ({
-    domain: domain.label,
-    score: sia.vigilanceScores?.domains?.[key] || 0,
+  // Prepare radar chart data with 12 domains
+  const radarData = Object.values(ETHICAL_DOMAINS).map((domain) => ({
+    domain: domain.nameFr,
+    shortName: domain.nameFr.split(' ')[0],
+    score: sia.vigilanceScores?.domains?.[domain.id] || 0,
     fullMark: 5,
+    color: CIRCLES[domain.circle].color,
   }))
 
   // Calculate stats
-  const activeTensions = sia.tensions.filter(t => t.status === 'ACTIVE' || t.status === 'OPEN').length
-  const resolvedTensions = sia.tensions.filter(t => t.status === 'RESOLVED' || t.status === 'ACCEPTED').length
-  const completedActions = sia.actions.filter(a => a.status === 'COMPLETED').length
+  const dilemmasCount = sia.dilemmas?.length || 0
+  const pendingDilemmas = sia.dilemmas?.filter((d) => d.maturity < 3).length || 0
+  const criticalDilemmas = sia.dilemmas?.filter((d) => d.severity >= 5 && d.maturity < 3).length || 0
+  const resolvedDilemmas = sia.dilemmas?.filter((d) => d.maturity >= 3).length || 0
+
+  const completedActions = sia.actions.filter((a) => a.status === 'COMPLETED').length
   const actionProgress = sia.actions.length > 0
     ? Math.round((completedActions / sia.actions.length) * 100)
     : 0
@@ -225,9 +241,9 @@ export default function SiaDashboardPage() {
             </Link>
           </Button>
           <Button asChild>
-            <Link href={`/${siaId}/tensions`}>
+            <Link href={`/${siaId}/dilemmas`}>
               <AlertTriangle className="mr-2 h-4 w-4" />
-              Voir les tensions
+              Voir les dilemmes
             </Link>
           </Button>
         </div>
@@ -256,8 +272,13 @@ export default function SiaDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Tensions actives</p>
-                <p className="text-3xl font-bold">{activeTensions}</p>
+                <p className="text-sm text-muted-foreground">Dilemmes à traiter</p>
+                <p className="text-3xl font-bold text-orange-600">{pendingDilemmas}</p>
+                {criticalDilemmas > 0 && (
+                  <p className="text-xs text-red-600 mt-1">
+                    dont {criticalDilemmas} critique(s)
+                  </p>
+                )}
               </div>
               <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
                 <AlertTriangle className="h-6 w-6 text-orange-600" />
@@ -296,13 +317,27 @@ export default function SiaDashboardPage() {
         </Card>
       </div>
 
+      {/* Criticality Matrix */}
+      {dilemmasCount > 0 && (
+        <CriticalityMatrix
+          dilemmas={matrixData}
+          onCellClick={(severity, maturity, cellDilemmas) => {
+            if (cellDilemmas.length === 1) {
+              router.push(`/${siaId}/dilemmas/${cellDilemmas[0].id}`)
+            } else if (cellDilemmas.length > 1) {
+              router.push(`/${siaId}/dilemmas`)
+            }
+          }}
+        />
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Radar Chart */}
+        {/* Radar Chart - 12 Domains */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Profil de vigilance</CardTitle>
+            <CardTitle>Profil de vigilance - 12 domaines</CardTitle>
             <CardDescription>
-              Scores par domaine éthique (1-5, 5 étant le plus vigilant)
+              Scores par domaine éthique organisés en 3 cercles (Personnes, Organisation, Société)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -311,8 +346,8 @@ export default function SiaDashboardPage() {
                 <RadarChart data={radarData}>
                   <PolarGrid stroke="#e5e7eb" />
                   <PolarAngleAxis
-                    dataKey="domain"
-                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    dataKey="shortName"
+                    tick={{ fill: '#6b7280', fontSize: 10 }}
                   />
                   <PolarRadiusAxis
                     angle={30}
@@ -348,65 +383,77 @@ export default function SiaDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Domain Breakdown */}
+        {/* Domain Breakdown by Circle */}
         <Card>
           <CardHeader>
-            <CardTitle>Détail par domaine</CardTitle>
+            <CardTitle>Détail par cercle</CardTitle>
             <CardDescription>
-              Cliquez sur un domaine pour voir les détails
+              Les 12 domaines organisés en 3 cercles
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(DOMAINS).map(([key, domain]) => {
-                const score = sia.vigilanceScores?.domains?.[key] || 0
-                const percentage = (score / 5) * 100
-                return (
-                  <div
-                    key={key}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                  >
-                    <div
-                      className="h-8 w-8 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: `${domain.color}20` }}
-                    >
-                      <span style={{ color: domain.color }}>
-                        {domainIcons[key]}
-                      </span>
+          <CardContent className="space-y-6">
+            {Object.values(CIRCLES).map((circle) => {
+              const domains = getDomainsByCircle(circle.id)
+              const avgScore = domains.reduce((sum, d) => {
+                return sum + (sia.vigilanceScores?.domains?.[d.id] || 0)
+              }, 0) / domains.length
+
+              return (
+                <div key={circle.id}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: circle.color }}
+                      />
+                      <span className="text-sm font-medium">{circle.nameFr}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium truncate">
-                          {domain.label}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {score.toFixed(1)}/5
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${percentage}%`,
-                            backgroundColor: domain.color,
-                          }}
-                        />
-                      </div>
-                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {avgScore.toFixed(1)}/5
+                    </span>
                   </div>
-                )
-              })}
-            </div>
+                  <div className="space-y-1 pl-5">
+                    {domains.map((domain) => {
+                      const Icon = domain.icon
+                      const score = sia.vigilanceScores?.domains?.[domain.id] || 0
+                      const percentage = (score / 5) * 100
+
+                      return (
+                        <div key={domain.id} className="flex items-center gap-2">
+                          <Icon
+                            className="h-3.5 w-3.5"
+                            style={{ color: circle.color }}
+                          />
+                          <span className="text-xs flex-1 truncate">{domain.nameFr}</span>
+                          <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${percentage}%`,
+                                backgroundColor: circle.color,
+                              }}
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground w-8">
+                            {score.toFixed(1)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs for Tensions and Actions */}
-      <Tabs defaultValue="tensions" className="w-full">
+      {/* Tabs for Dilemmas and Actions */}
+      <Tabs defaultValue="dilemmas" className="w-full">
         <TabsList>
-          <TabsTrigger value="tensions" className="gap-2">
+          <TabsTrigger value="dilemmas" className="gap-2">
             <AlertTriangle className="h-4 w-4" />
-            Tensions ({sia.tensions.length})
+            Dilemmes ({dilemmasCount})
           </TabsTrigger>
           <TabsTrigger value="actions" className="gap-2">
             <CheckCircle2 className="h-4 w-4" />
@@ -414,15 +461,15 @@ export default function SiaDashboardPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tensions" className="mt-4">
-          {sia.tensions.length === 0 ? (
+        <TabsContent value="dilemmas" className="mt-4">
+          {dilemmasCount === 0 ? (
             <Card>
               <CardContent className="py-12">
                 <div className="text-center">
                   <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Aucune tension détectée</h3>
+                  <h3 className="text-lg font-medium mb-2">Aucun dilemme détecté</h3>
                   <p className="text-muted-foreground mb-4">
-                    Cartographiez les flux de données pour détecter automatiquement les tensions éthiques.
+                    Cartographiez les flux de données pour détecter automatiquement les dilemmes éthiques.
                   </p>
                   <Button asChild>
                     <Link href={`/${siaId}/map`}>
@@ -435,56 +482,93 @@ export default function SiaDashboardPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {sia.tensions.slice(0, 5).map((tension) => (
-                <Card key={tension.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="py-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          <AlertTriangle
-                            className={`h-5 w-5 ${
-                              tension.severity === 'CRITICAL' ? 'text-red-500' :
-                              tension.severity === 'HIGH' ? 'text-orange-500' :
-                              tension.severity === 'MEDIUM' ? 'text-yellow-500' :
-                              'text-blue-500'
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{tension.description}</h4>
-                            <Badge className={severityColors[tension.severity]}>
-                              {priorityLabels[tension.severity]}
-                            </Badge>
+              {sia.dilemmas.slice(0, 5).map((dilemma) => {
+                const domainA = ETHICAL_DOMAINS[dilemma.domainA]
+                const domainB = ETHICAL_DOMAINS[dilemma.domainB]
+                const IconA = domainA?.icon
+                const IconB = domainB?.icon
+
+                return (
+                  <Card key={dilemma.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5">
+                            <AlertTriangle
+                              className={`h-5 w-5 ${
+                                dilemma.severity >= 5 ? 'text-red-500' :
+                                dilemma.severity >= 4 ? 'text-orange-500' :
+                                dilemma.severity >= 3 ? 'text-yellow-500' :
+                                'text-blue-500'
+                              }`}
+                            />
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              {domainIcons[tension.primaryDomain]}
-                              {DOMAINS[tension.primaryDomain as keyof typeof DOMAINS]?.label}
-                            </span>
-                            <ArrowRight className="h-3 w-3" />
-                            <span className="flex items-center gap-1">
-                              {domainIcons[tension.secondaryDomain]}
-                              {DOMAINS[tension.secondaryDomain as keyof typeof DOMAINS]?.label}
-                            </span>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="font-mono text-xs">
+                                {dilemma.ruleId}
+                              </Badge>
+                              <Badge
+                                className={
+                                  dilemma.severity >= 5 ? 'bg-red-100 text-red-800' :
+                                  dilemma.severity >= 4 ? 'bg-orange-100 text-orange-800' :
+                                  dilemma.severity >= 3 ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }
+                              >
+                                S{dilemma.severity}
+                              </Badge>
+                              <Badge
+                                className={
+                                  dilemma.maturity >= 3 ? 'bg-green-100 text-green-800' :
+                                  dilemma.maturity >= 2 ? 'bg-blue-100 text-blue-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }
+                              >
+                                M{dilemma.maturity}
+                              </Badge>
+                            </div>
+                            <p className="text-sm line-clamp-1 mb-1">{dilemma.formulation}</p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              {domainA && IconA && (
+                                <span
+                                  className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+                                  style={{ backgroundColor: `${CIRCLES[domainA.circle].color}15` }}
+                                >
+                                  <IconA className="h-3.5 w-3.5" style={{ color: CIRCLES[domainA.circle].color }} />
+                                  <span className="text-xs">{domainA.nameFr}</span>
+                                </span>
+                              )}
+                              <span>↔</span>
+                              {domainB && IconB && (
+                                <span
+                                  className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+                                  style={{ backgroundColor: `${CIRCLES[domainB.circle].color}15` }}
+                                >
+                                  <IconB className="h-3.5 w-3.5" style={{ color: CIRCLES[domainB.circle].color }} />
+                                  <span className="text-xs">{domainB.nameFr}</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/${siaId}/dilemmas/${dilemma.id}`}>
+                            {dilemma.maturity < 3 ? 'Arbitrer' : 'Détails'}
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/${siaId}/tensions/${tension.id}`}>
-                          Détails
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              {sia.tensions.length > 5 && (
+                    </CardContent>
+                  </Card>
+                )
+              })}
+              {dilemmasCount > 5 && (
                 <div className="text-center pt-2">
                   <Button variant="outline" asChild>
-                    <Link href={`/${siaId}/tensions`}>
-                      Voir toutes les tensions ({sia.tensions.length})
+                    <Link href={`/${siaId}/dilemmas`}>
+                      <LayoutGrid className="mr-2 h-4 w-4" />
+                      Voir tous les dilemmes ({dilemmasCount})
                     </Link>
                   </Button>
                 </div>
@@ -501,7 +585,7 @@ export default function SiaDashboardPage() {
                   <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">Aucune action planifiée</h3>
                   <p className="text-muted-foreground mb-4">
-                    Les actions sont créées pour résoudre les tensions détectées.
+                    Les actions sont créées pour résoudre les dilemmes détectés.
                   </p>
                   <Button asChild>
                     <Link href={`/${siaId}/actions`}>
