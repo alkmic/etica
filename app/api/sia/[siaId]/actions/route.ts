@@ -41,12 +41,13 @@ export async function GET(
     const actions = await db.action.findMany({
       where: { siaId },
       include: {
-        tension: {
+        dilemma: {
           select: {
             id: true,
-            description: true,
-            pattern: true,
-            impactedDomains: true,
+            formulation: true,
+            ruleId: true,
+            domainA: true,
+            domainB: true,
           },
         },
         evidences: {
@@ -87,12 +88,13 @@ const createActionSchema = z.object({
       'TECHNICAL',
       'ORGANIZATIONAL',
       'DESIGN',
-      'AUDIT',
+      'CONTRACTUAL',
+      'DOCUMENTATION',
     ])
     .default('TECHNICAL'),
   dueDate: z.string().optional(),
   assigneeId: z.string().optional(),
-  tensionId: z.string().optional(),
+  dilemmaId: z.string().optional(),
 })
 
 // POST /api/sia/[siaId]/actions - Create a new action
@@ -139,18 +141,20 @@ export async function POST(
         description: validatedData.description || '',
         priority: validatedData.priority,
         category: validatedData.category,
+        actionType: 'MITIGATION',
         status: 'TODO',
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
         assigneeId: validatedData.assigneeId || null,
-        tensionId: validatedData.tensionId || null,
+        dilemmaId: validatedData.dilemmaId || null,
       },
       include: {
-        tension: {
+        dilemma: {
           select: {
             id: true,
-            description: true,
-            pattern: true,
-            impactedDomains: true,
+            formulation: true,
+            ruleId: true,
+            domainA: true,
+            domainB: true,
           },
         },
         evidences: true,

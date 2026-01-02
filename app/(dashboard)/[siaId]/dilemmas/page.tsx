@@ -9,16 +9,13 @@ import {
   CheckCircle2,
   Clock,
   Search,
-  Filter,
   Gavel,
-  XCircle,
   LayoutGrid,
   List,
   TrendingUp,
   TrendingDown,
-  Layers,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -165,8 +162,8 @@ export default function DilemmasPage() {
   const analyzedDilemmas = filteredDilemmas.filter((d) => d.maturity === 2)
   const resolvedDilemmas = filteredDilemmas.filter((d) => d.maturity >= 3)
 
-  // Stats
-  const stats = useMemo(() => ({
+  // Stats (used by CriticalityStats component)
+  const _stats = useMemo(() => ({
     total: dilemmas.length,
     pending: dilemmas.filter((d) => d.maturity < 2).length,
     critical: dilemmas.filter((d) => d.severity >= 5 && d.maturity < 3).length,

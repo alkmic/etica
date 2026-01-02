@@ -9,10 +9,8 @@ import {
   ShieldAlert,
   XCircle,
   Lightbulb,
-  Info,
   Users,
   FileText,
-  AlertTriangle,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -92,7 +90,7 @@ const initialFormData: ArbitrationFormData = {
 }
 
 export function ArbitrationForm({
-  dilemmaId,
+  dilemmaId: _dilemmaId,
   dilemmaName,
   questionsToConsider = [],
   stakeholdersToConsult = [],

@@ -44,7 +44,7 @@ export async function GET(
         siaId,
       },
       include: {
-        tension: true,
+        dilemma: true,
         evidences: true,
       },
     })
@@ -80,7 +80,8 @@ const updateActionSchema = z.object({
       'TECHNICAL',
       'ORGANIZATIONAL',
       'DESIGN',
-      'AUDIT',
+      'CONTRACTUAL',
+      'DOCUMENTATION',
     ])
     .optional(),
   dueDate: z.string().nullable().optional(),

@@ -15,8 +15,6 @@ import {
   Calendar,
   FileText,
   Users,
-  HelpCircle,
-  Layers,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -483,7 +481,7 @@ export default function DilemmaDetailPage() {
                   <div>
                     <p className="text-sm font-medium mb-2">Patrons d'arbitrage sélectionnés :</p>
                     <ul className="text-sm text-muted-foreground list-disc list-inside">
-                      {dilemma.arbitration.selectedPatterns.map((patternId, i) => {
+                      {dilemma.arbitration.selectedPatterns.map((patternId) => {
                         const patternIndex = parseInt(patternId.replace('pattern-', ''))
                         const pattern = dilemma.acceptablePatterns[patternIndex]
                         return <li key={patternId}>{pattern || patternId}</li>

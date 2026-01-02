@@ -23,20 +23,18 @@ import {
   TrendingUp,
   AlertCircle,
   LayoutGrid,
-  Layers,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CriticalityMatrix, CriticalityStats } from '@/components/criticality-matrix'
+import { CriticalityMatrix } from '@/components/criticality-matrix'
 import {
   ETHICAL_DOMAINS,
   CIRCLES,
   getDomainsByCircle,
   type EthicalDomain,
-  type Circle,
 } from '@/lib/constants/ethical-domains'
 
 interface Sia {
@@ -141,7 +139,7 @@ export default function SiaDashboardPage() {
         }
         const data = await response.json()
         setSia(data)
-      } catch (err) {
+      } catch {
         setError('Erreur de connexion')
       } finally {
         setLoading(false)
@@ -210,7 +208,7 @@ export default function SiaDashboardPage() {
   const dilemmasCount = sia.dilemmas?.length || 0
   const pendingDilemmas = sia.dilemmas?.filter((d) => d.maturity < 3).length || 0
   const criticalDilemmas = sia.dilemmas?.filter((d) => d.severity >= 5 && d.maturity < 3).length || 0
-  const resolvedDilemmas = sia.dilemmas?.filter((d) => d.maturity >= 3).length || 0
+  const _resolvedDilemmas = sia.dilemmas?.filter((d) => d.maturity >= 3).length || 0
 
   const completedActions = sia.actions.filter((a) => a.status === 'COMPLETED').length
   const actionProgress = sia.actions.length > 0
