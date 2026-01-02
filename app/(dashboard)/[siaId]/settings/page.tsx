@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  Settings,
   Trash2,
   AlertTriangle,
   Save,
@@ -140,7 +139,7 @@ export default function SettingsPage() {
       } else {
         throw new Error('Save failed')
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Impossible de sauvegarder les modifications',
@@ -166,7 +165,7 @@ export default function SettingsPage() {
         })
         router.push('/')
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Impossible d\'archiver le SIA',
@@ -200,7 +199,7 @@ export default function SettingsPage() {
       } else {
         throw new Error('Delete failed')
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer le SIA',

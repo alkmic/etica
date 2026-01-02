@@ -1,0 +1,706 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTHENTIFICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  password      String?   // Hash bcrypt
+  image         String?
+  role          UserRole  @default(VIEWER)
+
+  // Relations
+  ownedSias       Sia[]     @relation("SiaOwner")
+  memberships     SiaMember[]
+  comments        Comment[]
+  assignedActions Action[]  @relation("ActionAssignee")
+  createdTensions Tension[] @relation("TensionCreator")
+
+  // NextAuth
+  accounts      Account[]
+  sessions      Session[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  ADMIN
+  OWNER
+  CONTRIBUTOR
+  REVIEWER
+  VIEWER
+}
+
+// ============================================
+// SIA (Système d'Intelligence Artificielle)
+// ============================================
+
+model Sia {
+  id          String    @id @default(cuid())
+
+  // Identité
+  name        String
+  description String?   @db.Text
+  domain      Domain
+  status      SiaStatus @default(DRAFT)
+
+  // Cadrage (stocké en JSON pour flexibilité)
+  dataTypes       String[]          // Types de données utilisées
+  decisionType    DecisionType
+  populations     String[]          // Populations impactées
+  hasVulnerable   Boolean           @default(false)
+  scale           Scale             @default(SMALL)
+
+  // Métadonnées
+  purpose         String?   @db.Text  // Finalité du système
+  context         String?   @db.Text  // Contexte d'utilisation
+
+  // Propriétaire
+  ownerId     String
+  owner       User      @relation("SiaOwner", fields: [ownerId], references: [id])
+
+  // Membres avec permissions
+  members     SiaMember[]
+
+  // Composants du graphe
+  nodes       Node[]
+  edges       Edge[]
+
+  // Évaluation
+  tensions    Tension[]
+  actions     Action[]
+
+  // Historique
+  versions    Version[]
+
+  // Scores de vigilance calculés (cache)
+  vigilanceScores Json?     // { privacy: 3, equity: 4, ... }
+  globalScore     Float?    // Score global
+
+  // Dates
+  nextReviewDate DateTime?
+  lastReviewDate DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([ownerId])
+  @@index([status])
+}
+
+model SiaMember {
+  id     String   @id @default(cuid())
+  siaId  String
+  sia    Sia      @relation(fields: [siaId], references: [id], onDelete: Cascade)
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   UserRole @default(VIEWER)
+
+  createdAt DateTime @default(now())
+
+  @@unique([siaId, userId])
+}
+
+enum Domain {
+  HEALTH
+  FINANCE
+  HR
+  COMMERCE
+  JUSTICE
+  ADMINISTRATION
+  EDUCATION
+  TRANSPORT
+  SECURITY
+  MARKETING
+  OTHER
+}
+
+enum SiaStatus {
+  DRAFT
+  ACTIVE
+  REVIEW
+  ARCHIVED
+}
+
+enum DecisionType {
+  INFORMATIVE         // Affiche des informations
+  RECOMMENDATION      // Suggère des options
+  ASSISTED_DECISION   // Propose, humain décide
+  AUTO_DECISION       // Décide automatiquement
+}
+
+enum Scale {
+  TINY        // < 100
+  SMALL       // 100 - 10K
+  MEDIUM      // 10K - 100K
+  LARGE       // 100K - 1M
+  VERY_LARGE  // > 1M
+}
+
+// ============================================
+// GRAPHE : NOEUDS ET FLUX
+// ============================================
+
+model Node {
+  id     String   @id @default(cuid())
+  siaId  String
+  sia    Sia      @relation(fields: [siaId], references: [id], onDelete: Cascade)
+
+  // Identité
+  type   NodeType
+  label  String
+
+  // Attributs spécifiques au type (JSON flexible)
+  // Pour HUMAN: { role, vulnerability, protectedChars, decisionPower }
+  // Pour AI: { modelType, opacity, autonomy, explainability }
+  // Pour INFRA: { infraType, location, retention, security }
+  // Pour ORG: { legalStatus, jurisdiction, responsibilities }
+  attributes Json   @default("{}")
+
+  // Position sur le canvas React Flow
+  positionX  Float  @default(0)
+  positionY  Float  @default(0)
+
+  // Style personnalisé
+  style      Json?  // { width, height, etc. }
+
+  // Relations
+  outgoingEdges Edge[] @relation("EdgeSource")
+  incomingEdges Edge[] @relation("EdgeTarget")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siaId])
+}
+
+enum NodeType {
+  HUMAN   // Personne physique
+  AI      // Composant IA/ML
+  INFRA   // Infrastructure technique
+  ORG     // Entité juridique
+}
+
+model Edge {
+  id       String @id @default(cuid())
+  siaId    String
+  sia      Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
+
+  // Connexion
+  sourceId String
+  source   Node   @relation("EdgeSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId String
+  target   Node   @relation("EdgeTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  // Caractéristiques du flux
+  label          String?
+  direction      FlowDirection
+  nature         FlowNature
+  dataCategories String[]        // Catégories de données
+  sensitivity    Sensitivity     @default(STANDARD)
+  automation     AutomationLevel @default(INFORMATIVE)
+  frequency      Frequency       @default(ON_DEMAND)
+  legalBasis     LegalBasis?
+
+  // Profil éthique (5 dimensions, 1-5 chacune)
+  agentivity      Int?  // Impact sur autonomie du destinataire (1=augmente, 5=supprime)
+  asymmetry       Int?  // Asymétrie informationnelle (1=symétrie, 5=asymétrie totale)
+  irreversibility Int?  // Possibilité d'annulation (1=réversible, 5=irréversible)
+  scalability     Int?  // Échelle d'impact (1=individuel, 5=systémique)
+  opacity         Int?  // Explicabilité (1=explicable, 5=opaque)
+
+  // Score de profil calculé
+  ethicalProfileScore Float?
+
+  // Niveau de vigilance calculé (1-5)
+  vigilanceLevel Int?
+
+  // Relations avec tensions
+  tensionEdges TensionEdge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siaId])
+  @@index([sourceId])
+  @@index([targetId])
+}
+
+enum FlowDirection {
+  H2M   // Humain vers Machine
+  M2M   // Machine vers Machine
+  M2H   // Machine vers Humain
+  H2H   // Humain vers Humain (via machine)
+}
+
+enum FlowNature {
+  COLLECTION      // Collecte de données
+  STORAGE         // Conservation des données
+  PROCESSING      // Traitement ou transformation
+  INFERENCE       // Inférence/prédiction
+  DECISION        // Prise de décision
+  SCORING         // Attribution d'un score
+  RECOMMENDATION  // Recommandation
+  PERSONALIZATION // Personnalisation
+  NOTIFICATION    // Notification
+  TRANSFER        // Transmission à un tiers
+  MONITORING      // Surveillance continue
+  MODERATION      // Filtrage ou modération
+  PREDICTION      // Anticipation comportement/événement
+  RISK_SCORING    // Évaluation de risque
+  PROFILING       // Création de profil
+  LEARNING        // Apprentissage du modèle
+  CONTROL         // Contrôle/supervision
+  ENRICHMENT      // Enrichissement de données
+}
+
+enum Sensitivity {
+  STANDARD
+  SENSITIVE         // Art. 9 RGPD
+  HIGHLY_SENSITIVE  // Santé, biométrie, etc.
+}
+
+enum AutomationLevel {
+  INFORMATIVE           // Information pure
+  ASSISTED              // Aide à la décision
+  SEMI_AUTO             // Décision avec validation
+  AUTO_WITH_RECOURSE    // Auto mais contestable
+  AUTO_NO_RECOURSE      // Auto sans recours
+}
+
+enum Frequency {
+  REALTIME
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+  ON_DEMAND
+  ONE_TIME
+}
+
+enum LegalBasis {
+  CONSENT
+  CONTRACT
+  LEGAL_OBLIGATION
+  VITAL_INTEREST
+  PUBLIC_INTEREST
+  LEGITIMATE_INTEREST
+}
+
+// ============================================
+// TENSIONS (DILEMMES ÉTHIQUES)
+// ============================================
+
+model Tension {
+  id     String @id @default(cuid())
+  siaId  String
+  sia    Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
+
+  // Identification
+  pattern     TensionPattern
+  customTitle String?         // Si pattern = OTHER
+  description String          @db.Text
+  status      TensionStatus   @default(DETECTED)
+  level       TensionLevel    @default(INDIVIDUAL)
+
+  // Domaines de vigilance impactés
+  impactedDomains String[]
+
+  // Sévérité calculée (1-5)
+  baseSeverity      Int       @default(3)  // Sévérité de base du pattern
+  calculatedSeverity Int?      // Sévérité finale après amplificateurs/mitigateurs
+
+  // Détection automatique
+  triggerConditions  Json?    // Conditions qui ont déclenché la détection
+  activeAmplifiers   String[] // IDs des amplificateurs actifs
+  activeMitigators   String[] // IDs des mitigateurs actifs
+  relatedNodeIds     String[] // Nœuds concernés par cette tension
+  detectionReason    String?  @db.Text // Explication lisible de la détection
+
+  // Qualification (1-5 chacun) - optionnel pour affinement manuel
+  severity        Int?  // Gravité de l'atteinte (remplace baseSeverity si renseigné)
+  probability     Int?  // Vraisemblance
+  scale           Int?  // Nombre de personnes
+  vulnerability   Int?  // Vulnérabilité des personnes
+  irreversibility Int?  // Réparabilité
+  detectability   Int?  // Facilité de détection (1=facile, 5=difficile)
+
+  // Niveaux d'incertitude pour chaque critère
+  uncertainties   Json?  // { severity: 'low'|'medium'|'high', ... }
+
+  // Scores calculés
+  exposureScore  Float?   // E : exposition brute
+  coverageScore  Float?   // C : couverture des actions
+  residualScore  Float?   // R : exposition résiduelle
+
+  // Flux concernés (relation N:N)
+  tensionEdges TensionEdge[]
+
+  // Actions liées
+  actions Action[]
+
+  // Arbitrage
+  arbitration Arbitration?
+
+  // Collaboration
+  comments   Comment[]
+
+  // Assignation
+  assigneeId String?
+  dueDate    DateTime?
+
+  // Créateur
+  createdById String?
+  createdBy   User?   @relation("TensionCreator", fields: [createdById], references: [id])
+
+  // Règle qui a déclenché la détection
+  triggeredByRule String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siaId])
+  @@index([status])
+  @@index([calculatedSeverity])
+}
+
+enum TensionLevel {
+  INDIVIDUAL   // Tension affectant des individus
+  RELATIONAL   // Tension affectant des relations entre acteurs
+  SYSTEMIC     // Tension à l'échelle du système ou de la société
+}
+
+model TensionEdge {
+  tensionId String
+  tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
+  edgeId    String
+  edge      Edge    @relation(fields: [edgeId], references: [id], onDelete: Cascade)
+
+  @@id([tensionId, edgeId])
+}
+
+enum TensionPattern {
+  // Tensions individuelles
+  SECURITY_VS_PRIVACY
+  PERFORMANCE_VS_EQUITY
+  EFFICIENCY_VS_TRANSPARENCY
+  AUTOMATION_VS_RECOURSE
+  PERSONALIZATION_VS_AUTONOMY
+  PRECISION_VS_MINIMIZATION
+  EXHAUSTIVITY_VS_OBLIVION
+  PREDICTION_VS_FREEWILL
+  SPEED_VS_REFLECTION
+  WELLBEING_VS_AUTONOMY
+  ASSISTANCE_VS_DEPENDENCY
+  EFFICIENCY_VS_HUMAN_CONTROL
+
+  // Tensions systémiques
+  EFFICIENCY_VS_EMPLOYMENT
+  PERFORMANCE_VS_ENVIRONMENT
+  CENTRALIZATION_VS_DEMOCRACY
+  STANDARDIZATION_VS_DIVERSITY
+  INNOVATION_VS_PRECAUTION
+
+  // Tensions relationnelles
+  PERSONALIZATION_VS_EQUALITY
+  CONFIDENTIALITY_VS_TRACEABILITY
+  COLLECTIVE_VS_INDIVIDUAL
+  EFFICIENCY_VS_PROTECTION
+  ACCESSIBILITY_VS_CONTROL
+  SCALE_VS_INDIVIDUALIZATION
+  DATA_EXPLOITATION_VS_USER_CONTROL
+  ENRICHMENT_VS_INVASIVE_INFERENCE
+
+  OTHER
+}
+
+enum TensionStatus {
+  DETECTED      // Détectée, non qualifiée
+  QUALIFIED     // Critères renseignés
+  IN_PROGRESS   // Actions en cours
+  ARBITRATED    // Arbitrage documenté
+  RESOLVED      // Résolue
+  DISMISSED     // Écartée (non pertinente)
+}
+
+// ============================================
+// ARBITRAGE
+// ============================================
+
+model Arbitration {
+  id        String  @id @default(cuid())
+  tensionId String  @unique
+  tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
+
+  // Type de décision (3 options)
+  decision          ArbitrationDecision @default(MITIGATE)
+
+  // Justification obligatoire (min 20 caractères)
+  justification     String @db.Text
+
+  // Pour MITIGATE: mesures sélectionnées
+  selectedMeasures  String[]  // IDs des mesures choisies (templates d'actions)
+
+  // Pour ACCEPT_RISK: analyse bénéfice/risque
+  benefitAnalysis   String? @db.Text  // Pourquoi le bénéfice justifie le risque
+  riskAcceptance    String? @db.Text  // Quels risques sont explicitement acceptés
+
+  // Pour REJECT: explication
+  rejectionReason   String? @db.Text  // Pourquoi la détection n'est pas pertinente
+
+  // Détails supplémentaires
+  proportionality   String? @db.Text // Nécessité, adéquation, proportionnalité
+  contestability    String? @db.Text // Comment contester
+  revisionConditions String? @db.Text // Quand réviser
+  compensatoryMeasures String? @db.Text // Mesures compensatoires additionnelles
+
+  // Validation
+  arbitratedById String?
+  arbitratedAt   DateTime @default(now())
+  validatedById  String?
+  validatedAt    DateTime?
+  nextReviewDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ArbitrationDecision {
+  MITIGATE      // Mettre en place des mesures
+  ACCEPT_RISK   // Accepter le risque
+  REJECT        // Rejeter la détection (non applicable)
+}
+
+// ============================================
+// ACTIONS
+// ============================================
+
+model Action {
+  id    String @id @default(cuid())
+  siaId String
+  sia   Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
+
+  // Lien optionnel avec une tension
+  tensionId String?
+  tension   Tension? @relation(fields: [tensionId], references: [id], onDelete: SetNull)
+
+  // Contenu
+  title       String
+  description String?  @db.Text
+  category    ActionCategory
+
+  // Priorisation
+  priority Priority @default(MEDIUM)
+  effort   Effort   @default(MEDIUM)
+  status   ActionStatus @default(TODO)
+
+  // Impact estimé sur les domaines (JSON)
+  // { "privacy": -2, "transparency": -1 } = réduit de 2 niveaux vie privée
+  estimatedImpact Json?
+
+  // Checklist interne (JSON array)
+  checklist Json?  // [{ text: "...", completed: boolean }]
+
+  // Template source
+  templateId String?
+
+  // Dates
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  // Assignation
+  assigneeId String?
+  assignee   User?   @relation("ActionAssignee", fields: [assigneeId], references: [id])
+
+  // Preuves
+  evidences Evidence[]
+
+  // Source de la recommandation
+  sourceRule String?  // Règle qui a suggéré cette action
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siaId])
+  @@index([tensionId])
+  @@index([status])
+}
+
+enum ActionCategory {
+  MINIMIZATION    // Minimisation des données
+  TRANSPARENCY    // Transparence et information
+  HUMAN_CONTROL   // Contrôle humain
+  RECOURSE        // Recours et contestation
+  TECHNICAL       // Mesures techniques
+  ORGANIZATIONAL  // Mesures organisationnelles
+  DESIGN          // Privacy/Fairness by design
+  AUDIT           // Audit et vérification
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum Effort {
+  TRIVIAL   // < 1 jour
+  SMALL     // 1-3 jours
+  MEDIUM    // 1-2 semaines
+  LARGE     // 2-4 semaines
+  HUGE      // > 1 mois
+}
+
+enum ActionStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+// ============================================
+// PREUVES
+// ============================================
+
+model Evidence {
+  id       String @id @default(cuid())
+  actionId String
+  action   Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  type     EvidenceType
+  title    String
+  description String?
+  url      String?       // Lien externe (Jira, Confluence, etc.)
+  fileKey  String?       // Clé fichier uploadé
+  fileName String?
+  fileSize Int?
+  mimeType String?
+
+  createdAt DateTime @default(now())
+
+  @@index([actionId])
+}
+
+enum EvidenceType {
+  DOCUMENT      // PDF, DOCX
+  LINK          // URL externe
+  SCREENSHOT    // Image
+  TICKET        // Jira, GitLab issue
+  TEST_REPORT   // Rapport de test
+  CERTIFICATE   // Certificat/attestation
+  CODE          // Extrait de code
+  OTHER
+}
+
+// ============================================
+// COLLABORATION
+// ============================================
+
+model Comment {
+  id        String  @id @default(cuid())
+
+  // Attaché à une tension
+  tensionId String
+  tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
+
+  // Auteur
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  content  String   @db.Text
+  resolved Boolean  @default(false)
+
+  // Réponse à un autre commentaire
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tensionId])
+  @@index([authorId])
+}
+
+// ============================================
+// VERSIONING
+// ============================================
+
+model Version {
+  id    String @id @default(cuid())
+  siaId String
+  sia   Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
+
+  number      Int
+  label       String?      // v1.0, v2.0-beta, etc.
+  changelog   String?  @db.Text
+
+  // Snapshot complet de l'état (JSON)
+  snapshot Json
+
+  // Scores au moment du snapshot
+  vigilanceScores Json?  // { privacy: 3, equity: 4, ... }
+  globalScore     Float?
+
+  // Statistiques
+  tensionCount    Int?
+  resolvedCount   Int?
+  actionCount     Int?
+  completedCount  Int?
+
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@unique([siaId, number])
+  @@index([siaId])
+}

@@ -13,10 +13,10 @@ import { AIAttributes, HumanAttributes, InfraAttributes, NodeTypeId } from '@/li
 export interface SiaContext {
   id: string
   name: string
-  domain: SiaDomainId
+  sector: SiaDomainId
   decisionType: string
   hasVulnerable: boolean
-  scale: ScaleId
+  userScale: ScaleId
   dataTypes: string[]
   populations: string[]
 }
@@ -138,7 +138,7 @@ function hasNoRecourse(edges: EdgeContext[]): boolean {
 }
 
 function hasLargeScale(sia: SiaContext): boolean {
-  return sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE'
+  return sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE'
 }
 
 function hasHighOpacity(edges: EdgeContext[]): boolean {
@@ -239,7 +239,7 @@ function collectCommonAmplifiers(ctx: DetectionContext): string[] {
   if (hasHighOpacity(ctx.edges)) {
     amplifiers.push('high_opacity')
   }
-  if (isHighRiskDomain(ctx.sia.domain)) {
+  if (isHighRiskDomain(ctx.sia.sector)) {
     amplifiers.push('high_risk_domain')
   }
 
@@ -288,7 +288,7 @@ const DETECTION_RULES: DetectionRule[] = [
         hasSensitiveData([e])
       )
 
-      const isSecurityDomain = ['FINANCE', 'JUSTICE', 'SECURITY', 'ADMINISTRATION'].includes(ctx.sia.domain)
+      const isSecurityDomain = ['FINANCE', 'JUSTICE', 'SECURITY', 'ADMINISTRATION'].includes(ctx.sia.sector)
 
       if (collectEdges.length === 0 || !isSecurityDomain) return null
 
@@ -300,7 +300,7 @@ const DETECTION_RULES: DetectionRule[] = [
           description: 'Collecte de données sensibles dans un contexte de sécurité',
           elementIds: collectEdges.map(e => e.id)
         }],
-        detectionReason: `Détectée car : Collecte ou surveillance de données ${hasHighSensitivity(collectEdges) ? 'hautement sensibles' : 'sensibles'} dans un domaine de sécurité (${ctx.sia.domain})`,
+        detectionReason: `Détectée car : Collecte ou surveillance de données ${hasHighSensitivity(collectEdges) ? 'hautement sensibles' : 'sensibles'} dans un domaine de sécurité (${ctx.sia.sector})`,
         activeAmplifiers: collectCommonAmplifiers(ctx),
         activeMitigators: collectCommonMitigators(ctx),
       }
@@ -528,7 +528,7 @@ const DETECTION_RULES: DetectionRule[] = [
         llmNodes.some(n => e.sourceId === n.id || e.targetId === n.id)
       )
 
-      const isCriticalDomain = ['HEALTH', 'JUSTICE', 'SECURITY'].includes(ctx.sia.domain)
+      const isCriticalDomain = ['HEALTH', 'JUSTICE', 'SECURITY'].includes(ctx.sia.sector)
 
       return {
         relatedEdgeIds: relatedEdges.map(e => e.id),
@@ -565,7 +565,7 @@ const DETECTION_RULES: DetectionRule[] = [
           description: 'Décision automatique uniforme à grande échelle',
           elementIds: []
         }],
-        detectionReason: `Détectée car : Décision automatique appliquée uniformément à ${SCALE_LEVELS[ctx.sia.scale].description}`,
+        detectionReason: `Détectée car : Décision automatique appliquée uniformément à ${SCALE_LEVELS[ctx.sia.userScale].description}`,
         activeAmplifiers: collectCommonAmplifiers(ctx),
         activeMitigators: collectCommonMitigators(ctx),
       }
@@ -694,7 +694,7 @@ const DETECTION_RULES: DetectionRule[] = [
           description: 'Modèle énergivore utilisé à grande échelle',
           elementIds: llmNodes.map(n => n.id)
         }],
-        detectionReason: `Détectée car : Modèle de type ${llmNodes[0].attributes?.subtype || 'Deep Learning/LLM'} déployé à grande échelle (${SCALE_LEVELS[ctx.sia.scale].description})`,
+        detectionReason: `Détectée car : Modèle de type ${llmNodes[0].attributes?.subtype || 'Deep Learning/LLM'} déployé à grande échelle (${SCALE_LEVELS[ctx.sia.userScale].description})`,
         activeAmplifiers: [...collectCommonAmplifiers(ctx), 'llm_model'],
         activeMitigators: collectCommonMitigators(ctx),
       }

@@ -1,5 +1,27 @@
 // Export all constants
+
+// Legacy domains (8 domaines)
 export * from './domains'
+
+// New ethical domains (12 domaines - méthodologie officielle)
+// Note: getDomainColor is exported from both files, use explicit import if needed
+export {
+  ETHICAL_DOMAINS,
+  CIRCLES,
+  getDomainsByCircle,
+  getDomainColor as getEthicalDomainColor,
+  getAllDomains,
+  formatDilemma,
+  getDomainsForRadarChart,
+  type EthicalDomain,
+  type Circle,
+  type DomainDefinition,
+  type CircleDefinition,
+} from './ethical-domains'
+
+// New enums for methodology alignment
+export * from './enums'
+
 export * from './tension-patterns'
 export * from './action-templates'
 export * from './data-types'

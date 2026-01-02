@@ -64,7 +64,7 @@ export default function LoginPage() {
         router.push(callbackUrl)
         router.refresh()
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Une erreur est survenue. Veuillez réessayer.',

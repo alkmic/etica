@@ -17,12 +17,12 @@ export interface Sia {
   id: string
   name: string
   description: string | null
-  domain: string
+  sector: string
   dataTypes: string[]
   decisionType: string
   populations: string[]
   hasVulnerable: boolean
-  scale: string
+  userScale: string
   status: string
   ownerId: string
   createdAt: Date
@@ -83,13 +83,14 @@ export interface Tension {
 export interface Action {
   id: string
   siaId: string
-  tensionId: string | null
+  dilemmaId: string | null
   title: string
   description: string | null
   category: string
   priority: string
   status: string
   effort: string
+  actionType: string
   dueDate: Date | null
   completedAt: Date | null
   assigneeId: string | null
@@ -188,7 +189,7 @@ export type TensionWithRelations = Tension & {
 }
 
 export type ActionWithRelations = Action & {
-  tension?: Tension | null
+  dilemma?: Tension | null
   assignee?: Pick<User, 'id' | 'name' | 'email' | 'image'> | null
   evidences: Evidence[]
 }
@@ -245,12 +246,12 @@ export interface CanvasEdge {
 export interface WizardData {
   name: string
   description?: string
-  domain: string
+  sector: string
   dataTypes: string[]
   decisionType: string
   populations: string[]
   hasVulnerable: boolean
-  scale: string
+  userScale: string
 }
 
 // Types pour les formulaires

@@ -157,10 +157,10 @@ export async function PUT(
       const siaContext = {
         id: updatedSia.id,
         name: updatedSia.name,
-        domain: updatedSia.domain as any,
+        sector: updatedSia.sector,
         decisionType: updatedSia.decisionType,
         hasVulnerable: updatedSia.hasVulnerable,
-        scale: updatedSia.scale as any,
+        userScale: updatedSia.userScale,
         dataTypes: updatedSia.dataTypes,
         populations: updatedSia.populations,
       }
@@ -205,17 +205,54 @@ export async function PUT(
 
       // Create new tensions
       for (const tension of detectedTensions) {
+        // Extract domains from pattern poles
+        const domainA = tension.pattern.poles?.[0] || tension.impactedDomains[0] || 'PRIVACY'
+        const domainB = tension.pattern.poles?.[1] || tension.impactedDomains[1] || 'TRANSPARENCY'
+
         await db.tension.create({
           data: {
             siaId,
-            pattern: tension.patternId as any,
+            // New required fields for Dilemma interface
+            ruleId: tension.patternId,
+            ruleName: tension.pattern.title || tension.patternId,
+            ruleFamily: 'STRUCTURAL' as any,
+            domainA: domainA as any,
+            domainB: domainB as any,
+            formulation: tension.pattern.description || tension.detectionReason || '',
+            mechanism: tension.detectionReason || '',
+            // Legacy fields for backward compatibility
+            pattern: tension.patternId,
             description: tension.pattern.description,
+            // Status and level
             status: 'DETECTED' as any,
-            impactedDomains: tension.impactedDomains,
-            severity: Number(tension.baseSeverity) || 0,
+            level: (tension.level as any) || 'INDIVIDUAL',
+            // Scoring
+            severity: Math.round(Number(tension.calculatedSeverity) || Number(tension.baseSeverity) || 3),
+            maturity: 0,
+            baseSeverity: Number(tension.baseSeverity) || null,
+            calculatedSeverity: Number(tension.calculatedSeverity) || null,
             exposureScore: Number(tension.baseSeverity) || null,
             residualScore: Number(tension.calculatedSeverity) || null,
+            // Impacted domains
+            impactedDomains: tension.impactedDomains,
+            // Detection
             triggeredByRule: 'auto-detection',
+            detectionReason: tension.detectionReason || null,
+            // Factors
+            aggravatingFactors: tension.activeAmplifiers || [],
+            mitigatingFactors: tension.activeMitigators || [],
+            activeAmplifiers: tension.activeAmplifiers || [],
+            activeMitigators: tension.activeMitigators || [],
+            // Traceability
+            affectedNodeIds: tension.relatedNodeIds || [],
+            affectedEdgeIds: tension.relatedEdgeIds || [],
+            relatedNodeIds: tension.relatedNodeIds || [],
+            // Guidance
+            questionsToConsider: tension.pattern.arbitrationQuestions || [],
+            stakeholdersToConsult: [],
+            acceptablePatterns: [],
+            requiredEvidences: [],
+            // Relations
             tensionEdges: {
               create: tension.relatedEdgeIds.map((edgeId: string) => ({
                 edgeId,

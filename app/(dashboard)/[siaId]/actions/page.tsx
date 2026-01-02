@@ -6,18 +6,16 @@ import Link from 'next/link'
 import {
   Plus,
   CheckCircle2,
-  Clock,
   AlertTriangle,
   Calendar,
   User,
-  Filter,
   Search,
   MoreVertical,
   Pencil,
   Trash2,
   ArrowUpRight,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,7 +46,6 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { ACTION_TEMPLATES } from '@/lib/constants/action-templates'
 
 interface Action {
   id: string
@@ -193,7 +190,7 @@ export default function ActionsPage() {
       } else {
         throw new Error('Failed to create')
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Impossible de créer l\'action',
@@ -218,8 +215,8 @@ export default function ActionsPage() {
           prev.map((a) => (a.id === action.id ? { ...a, status: newStatus } : a))
         )
       }
-    } catch (error) {
-      console.error('Error updating action:', error)
+    } catch (err) {
+      console.error('Error updating action:', err)
     }
   }
 
@@ -235,7 +232,7 @@ export default function ActionsPage() {
           title: 'Action supprimée',
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer l\'action',

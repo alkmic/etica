@@ -7,12 +7,12 @@ import { z } from 'zod'
 const createSiaSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(100),
   description: z.string().optional(),
-  domain: z.enum(['HEALTH', 'FINANCE', 'HR', 'COMMERCE', 'JUSTICE', 'ADMINISTRATION', 'EDUCATION', 'TRANSPORT', 'SECURITY', 'MARKETING', 'OTHER']).default('OTHER'),
+  sector: z.enum(['HEALTH', 'FINANCE', 'HR', 'COMMERCE', 'JUSTICE', 'ADMINISTRATION', 'EDUCATION', 'TRANSPORT', 'SECURITY', 'MARKETING', 'OTHER']).default('OTHER'),
   dataTypes: z.array(z.string()).optional(),
   decisionType: z.enum(['INFORMATIVE', 'RECOMMENDATION', 'ASSISTED_DECISION', 'AUTO_DECISION']).optional(),
   populations: z.array(z.string()).optional(),
   hasVulnerable: z.boolean().optional(),
-  scale: z.enum(['TINY', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE']).optional(),
+  userScale: z.enum(['TINY', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE']).optional(),
 })
 
 // GET /api/sia - List all SIAs for the current user
@@ -89,12 +89,12 @@ export async function POST(request: NextRequest) {
       data: {
         name: validatedData.name,
         description: validatedData.description || '',
-        domain: validatedData.domain,
+        sector: validatedData.sector,
         dataTypes: validatedData.dataTypes || [],
         decisionType: validatedData.decisionType || 'INFORMATIVE',
         populations: validatedData.populations || [],
         hasVulnerable: validatedData.hasVulnerable || false,
-        scale: validatedData.scale || 'SMALL',
+        userScale: validatedData.userScale || 'SMALL',
         status: 'DRAFT',
         ownerId: session.user.id,
         vigilanceScores: {

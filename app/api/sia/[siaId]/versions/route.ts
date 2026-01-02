@@ -119,7 +119,7 @@ export async function POST(
       description: sia.description,
       status: sia.status,
       decisionType: sia.decisionType,
-      scale: sia.scale,
+      userScale: sia.userScale,
       dataTypes: sia.dataTypes,
       populations: sia.populations,
       hasVulnerable: sia.hasVulnerable,

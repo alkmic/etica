@@ -8,10 +8,10 @@ import { DomainId } from '@/lib/constants/domains'
 export interface SiaContext {
   id: string
   name: string
-  domain: string
+  sector: string
   decisionType: string
   hasVulnerable: boolean
-  scale: string
+  userScale: string
   dataTypes: string[]
 }
 
@@ -144,7 +144,7 @@ const DETECTION_RULES: DetectionRule[] = [
       const hasSensitiveCollect = edges.some(
         (e) => e.nature === 'COLLECT' && (e.sensitivity === 'SENSITIVE' || e.sensitivity === 'HIGHLY_SENSITIVE')
       )
-      const isSecurityDomain = ['FINANCE', 'JUSTICE', 'SECURITY', 'ADMINISTRATION'].includes(sia.domain)
+      const isSecurityDomain = ['FINANCE', 'JUSTICE', 'SECURITY', 'ADMINISTRATION'].includes(sia.sector)
       return hasSensitiveCollect && isSecurityDomain
     },
     getRelatedEdges: (_sia, _nodes, edges) =>
@@ -208,7 +208,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Décision uniforme à grande échelle',
     description: 'Décision automatique appliquée uniformément à une large population.',
     condition: (sia, _nodes, _edges) => {
-      const isLargeScale = sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE'
+      const isLargeScale = sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE'
       const hasAutoDecision = sia.decisionType === 'AUTO_DECISION'
       return isLargeScale && hasAutoDecision
     },

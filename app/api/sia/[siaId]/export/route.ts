@@ -121,7 +121,7 @@ interface SiaExport {
   description: string
   status: string
   decisionType: string
-  scale: string
+  userScale: string
   dataTypes: string[]
   populations: string[]
   hasVulnerable: boolean
@@ -178,7 +178,7 @@ function generateCsv(sia: SiaExport): string {
   lines.push(`Description,${escapeCsv(sia.description)}`)
   lines.push(`Statut,${sia.status}`)
   lines.push(`Type de décision,${sia.decisionType}`)
-  lines.push(`Échelle,${sia.scale}`)
+  lines.push(`Échelle,${sia.userScale}`)
   lines.push(`Date de création,${new Date(sia.createdAt).toLocaleDateString('fr-FR')}`)
   lines.push('')
 
@@ -273,7 +273,7 @@ function generatePdfHtml(sia: SiaExport): string {
     <p><strong>Système:</strong> ${sia.name}</p>
     <p><strong>Description:</strong> ${sia.description}</p>
     <p><strong>Type de décision:</strong> ${sia.decisionType}</p>
-    <p><strong>Échelle:</strong> ${sia.scale}</p>
+    <p><strong>Échelle:</strong> ${sia.userScale}</p>
     <p><strong>Date:</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
   </div>
 

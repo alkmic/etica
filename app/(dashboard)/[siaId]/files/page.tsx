@@ -15,7 +15,6 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 
 interface Version {
@@ -78,7 +77,7 @@ export default function FilesPage() {
       } else {
         throw new Error('Export failed')
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: `Impossible d'exporter en ${format.toUpperCase()}`,
@@ -103,7 +102,7 @@ export default function FilesPage() {
           description: `Version ${newVersion.version} sauvegardée`,
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erreur',
         description: 'Impossible de créer une version',
