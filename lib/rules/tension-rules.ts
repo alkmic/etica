@@ -881,6 +881,158 @@ const DETECTION_RULES: DetectionRule[] = [
     impactedDomains: [],
     suggestedActions: ['DOCUMENTATION'],
   },
+
+  // ===========================================================================
+  // CATEGORY 12: CIRCLE 2 - ORGANISATION (Maîtrise, Responsabilité, Souveraineté)
+  // ===========================================================================
+
+  // R044: External AI provider (sovereignty concern)
+  {
+    id: 'R044',
+    pattern: 'SOVEREIGNTY_VS_PERFORMANCE',
+    name: 'Fournisseur IA externe',
+    description: 'Le système utilise des services IA externes, créant une dépendance et des questions de souveraineté des données.',
+    condition: (sia, nodes, edges) => {
+      // Check for AI nodes with external provider attributes
+      return nodes.some(n => {
+        const attrs = n.attributes as Record<string, unknown>
+        const isAI = getNodeFunctionType(n) === 'DECISION' || getNodeFunctionType(n) === 'TREATMENT'
+        const isExternal = attrs?.isExternal === true || attrs?.externalProvider
+        return isAI && isExternal
+      })
+    },
+    getRelatedEdges: (sia, nodes, edges) => {
+      const externalIds = nodes
+        .filter(n => {
+          const attrs = n.attributes as Record<string, unknown>
+          return attrs?.isExternal === true || attrs?.externalProvider
+        })
+        .map(n => n.id)
+      return edges
+        .filter(e => externalIds.includes(e.sourceId) || externalIds.includes(e.targetId))
+        .map(e => e.id)
+    },
+    confidence: 'MEDIUM',
+    impactedDomains: ['SOVEREIGNTY', 'CONTROL'],
+    suggestedActions: ['VENDOR_ASSESSMENT', 'DATA_LOCALIZATION'],
+  },
+
+  // R045: Complex AI system (control concern)
+  {
+    id: 'R045',
+    pattern: 'CONTROL_VS_INNOVATION',
+    name: 'Système IA complexe',
+    description: 'Le système utilise des composants IA avancés qui peuvent être difficiles à maîtriser.',
+    condition: (sia, nodes, edges) => {
+      const aiNodes = nodes.filter(n => {
+        const attrs = n.attributes as Record<string, unknown>
+        return getNodeFunctionType(n) === 'DECISION' &&
+               (attrs?.opacity === 'opaque' || n.type === 'AI')
+      })
+      return aiNodes.length > 0
+    },
+    getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'DECISION'),
+    confidence: 'MEDIUM',
+    impactedDomains: ['CONTROL', 'TRANSPARENCY'],
+    suggestedActions: ['TECHNICAL_DOCUMENTATION', 'COMPETENCY_PLAN', 'TRAINING'],
+  },
+
+  // R046: Rapid deployment without governance
+  {
+    id: 'R046',
+    pattern: 'RESPONSIBILITY_VS_AGILITY',
+    name: 'Déploiement rapide sans gouvernance',
+    description: 'Le système semble manquer de points de validation humaine clairs pour assurer la gouvernance.',
+    condition: (sia, nodes, edges) => {
+      const hasDecision = hasNodeOfType(nodes, 'DECISION')
+      const hasAction = hasNodeOfType(nodes, 'ACTION')
+      const humanStakeholders = nodes.filter(n => {
+        const attrs = n.attributes as Record<string, unknown>
+        return getNodeFunctionType(n) === 'STAKEHOLDER' && attrs?.entityType === 'HUMAN'
+      })
+      // Concern if decisions lead to actions but few human checkpoints
+      return hasDecision && hasAction && humanStakeholders.length < 2
+    },
+    getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'DECISION', 'ACTION'),
+    confidence: 'LOW',
+    impactedDomains: ['RESPONSIBILITY', 'CONTROL'],
+    suggestedActions: ['GOVERNANCE_RACI', 'ESCALATION_CHAIN', 'EXECUTIVE_COMMITMENT'],
+  },
+
+  // ===========================================================================
+  // CATEGORY 13: CIRCLE 3 - SOCIÉTÉ (Durabilité, Loyauté, Équilibre sociétal)
+  // ===========================================================================
+
+  // R047: Large scale AI with societal impact
+  {
+    id: 'R047',
+    pattern: 'BALANCE_VS_EFFICIENCY',
+    name: 'Impact sociétal à grande échelle',
+    description: 'Le système opère à grande échelle avec de l\'IA, pouvant créer des effets systémiques sur la société.',
+    condition: (sia, nodes, edges) => {
+      const isLargeScale = sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE' ||
+                          sia.scale === 'NATIONAL' || sia.scale === 'INTERNATIONAL'
+      const hasAI = hasNodeOfType(nodes, 'DECISION')
+      return isLargeScale && hasAI
+    },
+    getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
+    confidence: 'MEDIUM',
+    impactedDomains: ['BALANCE', 'EQUITY'],
+    suggestedActions: ['SYSTEMIC_IMPACT_ASSESSMENT', 'EMPLOYMENT_TRANSITION', 'SECTOR_COORDINATION'],
+  },
+
+  // R048: Multiple treatments (sustainability concern)
+  {
+    id: 'R048',
+    pattern: 'PERFORMANCE_VS_SUSTAINABILITY',
+    name: 'Chaîne de traitement intensive',
+    description: 'Le système comporte plusieurs traitements algorithmiques, posant la question de l\'empreinte environnementale.',
+    condition: (sia, nodes, edges) => {
+      const treatmentCount = countNodesOfType(nodes, 'TREATMENT', 'DECISION')
+      return treatmentCount >= 3
+    },
+    getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'TREATMENT', 'DECISION'),
+    confidence: 'LOW',
+    impactedDomains: ['SUSTAINABILITY'],
+    suggestedActions: ['CARBON_FOOTPRINT', 'GREEN_AI'],
+  },
+
+  // R049: Commercial system with personalization
+  {
+    id: 'R049',
+    pattern: 'LOYALTY_VS_PROFIT',
+    name: 'Système commercial avec personnalisation',
+    description: 'Le système commercial personnalisé peut créer des tensions entre profit et loyauté envers les utilisateurs.',
+    condition: (sia, nodes, edges) => {
+      const isCommercial = sia.domain === 'COMMERCE' || sia.domain === 'MARKETING' || sia.domain === 'MEDIA'
+      const hasPersonalization = hasNodeOfType(nodes, 'TREATMENT', 'DECISION') &&
+                                 hasNodeOfType(nodes, 'STAKEHOLDER')
+      return isCommercial && hasPersonalization
+    },
+    getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
+    confidence: 'MEDIUM',
+    impactedDomains: ['LOYALTY', 'TRANSPARENCY'],
+    suggestedActions: ['STAKEHOLDER_COMMUNICATION', 'FAIR_VALUE_SHARING', 'TRANSPARENCY_NOTICE'],
+  },
+
+  // R050: Resource-intensive with equity concerns
+  {
+    id: 'R050',
+    pattern: 'SUSTAINABILITY_VS_ACCESSIBILITY',
+    name: 'Système intensif avec enjeu d\'accessibilité',
+    description: 'Les mesures de sobriété numérique pourraient limiter l\'accès pour certaines populations.',
+    condition: (sia, nodes, edges) => {
+      const hasVulnerable = sia.hasVulnerable
+      const isLargeScale = sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE' ||
+                          sia.scale === 'NATIONAL' || sia.scale === 'INTERNATIONAL'
+      const hasTreatment = hasNodeOfType(nodes, 'TREATMENT', 'DECISION')
+      return hasVulnerable && isLargeScale && hasTreatment
+    },
+    getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
+    confidence: 'LOW',
+    impactedDomains: ['SUSTAINABILITY', 'EQUITY'],
+    suggestedActions: ['GREEN_AI', 'EXCEPTION_PROCESS', 'ACCOMMODATION'],
+  },
 ]
 
 /**

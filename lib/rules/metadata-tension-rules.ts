@@ -301,7 +301,7 @@ export function suggestTensionsFromMetadata(sia: SiaMetadata): SuggestedTension[
         // Fusionner les questions
         const merged: SuggestedTension = {
           ...suggestion,
-          suggestedQuestions: [...new Set([...existing.suggestedQuestions, ...suggestion.suggestedQuestions])],
+          suggestedQuestions: Array.from(new Set([...existing.suggestedQuestions, ...suggestion.suggestedQuestions])),
         }
         byPattern.set(suggestion.pattern, merged)
       }

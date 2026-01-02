@@ -355,6 +355,156 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
       'La rentabilité seule peut-elle décider de l\'accès ?',
     ],
   },
+
+  // =============================================================================
+  // TENSIONS IMPLIQUANT LE CERCLE 2 : ORGANISATION
+  // =============================================================================
+
+  CONTROL_VS_INNOVATION: {
+    id: 'CONTROL_VS_INNOVATION',
+    title: 'Maîtrise vs Innovation',
+    shortTitle: 'Maîtrise / Innovation',
+    description: 'Le besoin de contrôler et comprendre le système peut freiner l\'adoption de nouvelles technologies plus performantes.',
+    domains: ['CONTROL', 'TRANSPARENCY'],
+    examples: [
+      'Refus de modèles boîte noire plus performants',
+      'Retard dans l\'adoption de l\'IA générative',
+      'Préférence pour des algorithmes explicables mais moins précis',
+      'Exigence de documentation complète avant déploiement',
+    ],
+    defaultActions: ['EXPLAINABILITY_LAYER', 'TRAINING', 'STAGED_ROLLOUT'],
+    arbitrationQuestions: [
+      'Le gain de performance justifie-t-il la perte de maîtrise ?',
+      'Des mécanismes de compréhension peuvent-ils être ajoutés ?',
+      'L\'équipe a-t-elle les compétences pour maintenir le système ?',
+      'Un plan de montée en compétences est-il prévu ?',
+    ],
+  },
+  SOVEREIGNTY_VS_PERFORMANCE: {
+    id: 'SOVEREIGNTY_VS_PERFORMANCE',
+    title: 'Souveraineté vs Performance',
+    shortTitle: 'Souveraineté / Performance',
+    description: 'Les solutions souveraines (locales, open source) peuvent être moins performantes que les géants technologiques.',
+    domains: ['SOVEREIGNTY', 'CONTROL'],
+    examples: [
+      'Choix entre GPT-4 et modèle européen moins performant',
+      'Hébergement local vs cloud hyperscaler',
+      'Solution maison vs SaaS dominant',
+      'API française vs API américaine plus mature',
+    ],
+    defaultActions: ['GOVERNANCE_RACI', 'MONITORING'],
+    arbitrationQuestions: [
+      'La dépendance créée est-elle acceptable ?',
+      'Les données peuvent-elles quitter le territoire ?',
+      'Quel est le risque de lock-in ?',
+      'Une solution de repli existe-t-elle ?',
+    ],
+  },
+  RESPONSIBILITY_VS_AGILITY: {
+    id: 'RESPONSIBILITY_VS_AGILITY',
+    title: 'Responsabilité vs Agilité',
+    shortTitle: 'Responsabilité / Agilité',
+    description: 'L\'établissement de responsabilités claires peut ralentir les itérations et les déploiements rapides.',
+    domains: ['RESPONSIBILITY', 'CONTROL'],
+    examples: [
+      'Validation par comité avant chaque mise à jour',
+      'Documentation obligatoire retardant le time-to-market',
+      'Processus d\'approbation multi-niveaux',
+      'Audits de conformité bloquants',
+    ],
+    defaultActions: ['GOVERNANCE_RACI', 'INCIDENT_PROCESS', 'STAGED_ROLLOUT'],
+    arbitrationQuestions: [
+      'Le processus de validation est-il proportionné au risque ?',
+      'Peut-on distinguer les changements mineurs des majeurs ?',
+      'Les responsabilités sont-elles clairement définies ?',
+      'Un fast-track pour les correctifs urgents existe-t-il ?',
+    ],
+  },
+
+  // =============================================================================
+  // TENSIONS IMPLIQUANT LE CERCLE 3 : SOCIÉTÉ
+  // =============================================================================
+
+  PERFORMANCE_VS_SUSTAINABILITY: {
+    id: 'PERFORMANCE_VS_SUSTAINABILITY',
+    title: 'Performance vs Durabilité',
+    shortTitle: 'Performance / Durabilité',
+    description: 'L\'amélioration des performances (précision, rapidité) peut nécessiter des ressources computationnelles importantes.',
+    domains: ['SUSTAINABILITY', 'RESPONSIBILITY'],
+    examples: [
+      'Entraînement de grands modèles de langage',
+      'Fine-tuning répétés pour gains marginaux',
+      'Inférence GPU massive en production',
+      'Multiplication des requêtes pour améliorer les résultats',
+    ],
+    defaultActions: ['MONITORING', 'REGULAR_AUDIT'],
+    arbitrationQuestions: [
+      'Le gain de performance justifie-t-il l\'empreinte carbone ?',
+      'Une version plus légère serait-elle acceptable ?',
+      'L\'infrastructure est-elle optimisée énergétiquement ?',
+      'Les alternatives moins gourmandes ont-elles été évaluées ?',
+    ],
+  },
+  LOYALTY_VS_PROFIT: {
+    id: 'LOYALTY_VS_PROFIT',
+    title: 'Loyauté vs Profit',
+    shortTitle: 'Loyauté / Profit',
+    description: 'L\'optimisation du profit peut se faire au détriment des engagements envers les partenaires et utilisateurs.',
+    domains: ['LOYALTY', 'EQUITY'],
+    examples: [
+      'Changement unilatéral des conditions d\'API',
+      'Augmentation des prix sans préavis',
+      'Monétisation des données partenaires',
+      'Dégradation du service gratuit pour pousser au premium',
+    ],
+    defaultActions: ['TRANSPARENCY_NOTICE', 'GOVERNANCE_RACI'],
+    arbitrationQuestions: [
+      'Les engagements pris sont-ils respectés ?',
+      'Les partenaires sont-ils prévenus des changements ?',
+      'Le partage de valeur est-il équitable ?',
+      'Les utilisateurs sont-ils traités comme des parties prenantes ?',
+    ],
+  },
+  BALANCE_VS_EFFICIENCY: {
+    id: 'BALANCE_VS_EFFICIENCY',
+    title: 'Équilibre sociétal vs Efficience',
+    shortTitle: 'Équilibre / Efficience',
+    description: 'L\'optimisation algorithmique peut créer des effets systémiques négatifs (concentration, inégalités).',
+    domains: ['BALANCE', 'EQUITY'],
+    examples: [
+      'Algorithmes de recommandation créant des monopoles de l\'attention',
+      'Optimisation des prix créant des déserts de services',
+      'Scoring amplifiant les inégalités territoriales',
+      'Automatisation éliminant des emplois sans alternatives',
+    ],
+    defaultActions: ['REGULAR_AUDIT', 'FAIRNESS_METRICS', 'STAGED_ROLLOUT'],
+    arbitrationQuestions: [
+      'Les effets systémiques ont-ils été évalués ?',
+      'Le système renforce-t-il les inégalités existantes ?',
+      'Quel précédent est créé pour le secteur ?',
+      'L\'impact sur l\'emploi a-t-il été considéré ?',
+    ],
+  },
+  SUSTAINABILITY_VS_ACCESSIBILITY: {
+    id: 'SUSTAINABILITY_VS_ACCESSIBILITY',
+    title: 'Durabilité vs Accessibilité',
+    shortTitle: 'Durabilité / Accessibilité',
+    description: 'Les mesures de sobriété numérique peuvent limiter l\'accès au service pour certaines populations.',
+    domains: ['SUSTAINABILITY', 'EQUITY'],
+    examples: [
+      'Limitation du nombre de requêtes par utilisateur',
+      'Dégradation de la qualité pour réduire la bande passante',
+      'Restriction des fonctionnalités énergivores',
+      'Tarification de l\'usage pour inciter à la sobriété',
+    ],
+    defaultActions: ['USER_CONTROLS', 'EXCEPTION_PROCESS'],
+    arbitrationQuestions: [
+      'Les restrictions impactent-elles disproportionnément certains groupes ?',
+      'Des exceptions sont-elles prévues pour les usages essentiels ?',
+      'L\'équité d\'accès est-elle préservée ?',
+      'Les alternatives moins gourmandes sont-elles accessibles ?',
+    ],
+  },
   OTHER: {
     id: 'OTHER',
     title: 'Autre tension',
