@@ -157,10 +157,10 @@ export async function PUT(
       const siaContext = {
         id: updatedSia.id,
         name: updatedSia.name,
-        domain: updatedSia.domain as any,
+        sector: updatedSia.sector,
         decisionType: updatedSia.decisionType,
         hasVulnerable: updatedSia.hasVulnerable,
-        scale: updatedSia.scale as any,
+        userScale: updatedSia.userScale,
         dataTypes: updatedSia.dataTypes,
         populations: updatedSia.populations,
       }
