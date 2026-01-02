@@ -194,6 +194,8 @@ export const SECTORS = {
   EDUCATION: { label: 'Éducation', description: 'Écoles, universités, formation' },
   TRANSPORT: { label: 'Transport', description: 'Logistique, mobilité' },
   INSURANCE: { label: 'Assurance', description: 'Assureurs, mutuelles' },
+  SECURITY: { label: 'Sécurité', description: 'Cybersécurité, surveillance, accès' },
+  MARKETING: { label: 'Marketing', description: 'Publicité, communication, fidélisation' },
   OTHER: { label: 'Autre', description: 'Autre secteur' },
 } as const;
 

@@ -486,6 +486,7 @@ export const SIA_DOMAINS = {
   ADMINISTRATION: { id: 'ADMINISTRATION', label: 'Administration publique', icon: 'Landmark', highRisk: true },
   EDUCATION: { id: 'EDUCATION', label: 'Éducation', icon: 'GraduationCap', highRisk: true },
   TRANSPORT: { id: 'TRANSPORT', label: 'Transport', icon: 'Car', highRisk: false },
+  INSURANCE: { id: 'INSURANCE', label: 'Assurance', icon: 'ShieldCheck', highRisk: true },
   SECURITY: { id: 'SECURITY', label: 'Sécurité', icon: 'Shield', highRisk: true },
   MARKETING: { id: 'MARKETING', label: 'Marketing & Publicité', icon: 'Megaphone', highRisk: false },
   OTHER: { id: 'OTHER', label: 'Autre', icon: 'MoreHorizontal', highRisk: false },
