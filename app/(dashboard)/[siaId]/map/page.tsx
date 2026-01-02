@@ -145,6 +145,11 @@ function MapCanvas() {
               dataTypes?: string[]
               inputCount?: number
               outputCount?: number
+              // Methodology-critical attributes
+              isExternal?: boolean
+              externalProvider?: string
+              externalLocation?: string
+              opacity?: string
             }
 
             let functionType: NodeType = attrs.functionType as NodeType
@@ -170,6 +175,11 @@ function MapCanvas() {
                 dataTypes: attrs.dataTypes || [],
                 inputCount: attrs.inputCount || 1,
                 outputCount: attrs.outputCount || 1,
+                // Methodology-critical attributes
+                isExternal: attrs.isExternal || false,
+                provider: attrs.externalProvider || '',
+                location: attrs.externalLocation || '',
+                opacity: attrs.opacity || 'transparent',
               },
             }
           })
@@ -183,6 +193,14 @@ function MapCanvas() {
             dataCategories?: string[]
             description?: string
             label?: string
+            nature?: string
+            automation?: string
+            sensitivity?: string
+            agentivity?: number | null
+            asymmetry?: number | null
+            irreversibility?: number | null
+            scalability?: number | null
+            opacity?: number | null
           }) => ({
             id: edge.id,
             source: edge.sourceId,
@@ -194,6 +212,15 @@ function MapCanvas() {
               dataTypes: edge.dataCategories || [],
               description: edge.description,
               label: edge.label,
+              // Methodology-critical attributes
+              nature: edge.nature || 'TRANSFER',
+              automation: edge.automation || 'INFORMATIVE',
+              sensitivity: edge.sensitivity || 'STANDARD',
+              agentivity: edge.agentivity ?? null,
+              asymmetry: edge.asymmetry ?? null,
+              irreversibility: edge.irreversibility ?? null,
+              scalability: edge.scalability ?? null,
+              opacity: edge.opacity ?? null,
             },
           }))
 
@@ -350,6 +377,13 @@ function MapCanvas() {
         outputCount: node.data.outputCount || 1,
         positionX: node.position.x,
         positionY: node.position.y,
+        // Methodology-critical attributes
+        attributes: {
+          isExternal: node.data.isExternal || false,
+          externalProvider: node.data.provider || '',
+          externalLocation: node.data.location || '',
+          opacity: node.data.opacity || 'transparent',
+        },
       }))
 
       const edgesData = edges.map((edge) => ({
@@ -362,6 +396,16 @@ function MapCanvas() {
         description: edge.data?.description || '',
         label: edge.data?.label || '',
         domains: edge.data?.domains || [],
+        // Methodology-critical fields
+        nature: edge.data?.nature || 'TRANSFER',
+        automation: edge.data?.automation || 'INFORMATIVE',
+        sensitivity: edge.data?.sensitivity || 'STANDARD',
+        // Ethical profile dimensions
+        agentivity: edge.data?.agentivity ?? null,
+        asymmetry: edge.data?.asymmetry ?? null,
+        irreversibility: edge.data?.irreversibility ?? null,
+        scalability: edge.data?.scalability ?? null,
+        opacity: edge.data?.opacity ?? null,
       }))
 
       const response = await fetch(`/api/sia/${siaId}/canvas`, {

@@ -36,11 +36,17 @@ interface EdgeEditorProps {
   sourceLabel: string
   targetLabel: string
   onUpdate: (id: string, data: Partial<{
-    dataTypes: string[]
-    description: string
-    nature: string
-    automation: string
-    label: string
+    dataTypes?: string[]
+    description?: string
+    nature?: string
+    automation?: string
+    label?: string
+    sensitivity?: string
+    agentivity?: number | null
+    asymmetry?: number | null
+    irreversibility?: number | null
+    scalability?: number | null
+    opacity?: number | null
   }>) => void
   onClose: () => void
   onDelete: (id: string) => void

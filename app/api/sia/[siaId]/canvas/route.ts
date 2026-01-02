@@ -49,6 +49,16 @@ const edgeSchema = z.object({
   nature: z.enum(['COLLECT', 'INFERENCE', 'ENRICHMENT', 'DECISION', 'RECOMMENDATION', 'NOTIFICATION', 'LEARNING', 'CONTROL', 'TRANSFER', 'STORAGE']).optional().default('TRANSFER'),
   dataCategories: z.array(z.string()).optional(),
   domains: z.array(z.string()).optional(),
+  // Automation level - critical for detection rules
+  automation: z.enum(['INFORMATIVE', 'ASSISTED', 'SEMI_AUTO', 'AUTO_WITH_RECOURSE', 'AUTO_NO_RECOURSE']).optional().default('INFORMATIVE'),
+  // Sensitivity
+  sensitivity: z.enum(['STANDARD', 'SENSITIVE', 'HIGHLY_SENSITIVE']).optional().default('STANDARD'),
+  // Ethical profile dimensions
+  agentivity: z.number().min(1).max(5).optional().nullable(),
+  asymmetry: z.number().min(1).max(5).optional().nullable(),
+  irreversibility: z.number().min(1).max(5).optional().nullable(),
+  scalability: z.number().min(1).max(5).optional().nullable(),
+  opacity: z.number().min(1).max(5).optional().nullable(),
 })
 
 const canvasSchema = z.object({
@@ -152,6 +162,15 @@ export async function PUT(
             direction: edge.direction,
             nature: edge.nature,
             dataCategories: edge.dataCategories || [],
+            // Methodology-critical fields
+            automation: edge.automation,
+            sensitivity: edge.sensitivity,
+            // Ethical profile dimensions
+            agentivity: edge.agentivity ?? null,
+            asymmetry: edge.asymmetry ?? null,
+            irreversibility: edge.irreversibility ?? null,
+            scalability: edge.scalability ?? null,
+            opacity: edge.opacity ?? null,
           })),
         })
       }

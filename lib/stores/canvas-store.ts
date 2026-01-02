@@ -16,6 +16,11 @@ import {
 export type NodeType = 'SOURCE' | 'TREATMENT' | 'DECISION' | 'ACTION' | 'STAKEHOLDER' | 'STORAGE'
 export type NodeEntityType = 'HUMAN' | 'AI' | 'INFRA' | 'ORG'
 
+export type OpacityLevel = 'transparent' | 'explainable' | 'opaque'
+export type FlowNature = 'COLLECT' | 'INFERENCE' | 'ENRICHMENT' | 'DECISION' | 'RECOMMENDATION' | 'NOTIFICATION' | 'LEARNING' | 'CONTROL' | 'TRANSFER' | 'STORAGE'
+export type AutomationLevel = 'INFORMATIVE' | 'ASSISTED' | 'SEMI_AUTO' | 'AUTO_WITH_RECOURSE' | 'AUTO_NO_RECOURSE'
+export type Sensitivity = 'STANDARD' | 'SENSITIVE' | 'HIGHLY_SENSITIVE'
+
 export interface CanvasNode extends Node {
   data: {
     label: string
@@ -25,22 +30,35 @@ export interface CanvasNode extends Node {
     dataTypes?: string[]
     inputCount?: number
     outputCount?: number
+    // Methodology-critical attributes
+    isExternal?: boolean
+    provider?: string
+    location?: string
+    opacity?: OpacityLevel
     metadata?: Record<string, unknown>
   }
 }
 
-export interface CanvasEdge extends Edge {
-  id: string
-  source: string
-  target: string
+export interface CanvasEdgeData {
+  dataTypes?: string[]
+  description?: string
+  domains?: string[]
+  label?: string
+  // Methodology-critical attributes
+  nature?: FlowNature
+  automation?: AutomationLevel
+  sensitivity?: Sensitivity
+  // Ethical profile dimensions (1-5)
+  agentivity?: number | null
+  asymmetry?: number | null
+  irreversibility?: number | null
+  scalability?: number | null
+  opacity?: number | null
+}
+
+export type CanvasEdge = Edge<CanvasEdgeData> & {
   sourceHandle?: string
   targetHandle?: string
-  data?: {
-    dataTypes?: string[]
-    description?: string
-    domains?: string[]
-    label?: string
-  }
 }
 
 interface CanvasState {
@@ -114,6 +132,15 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         description: '',
         domains: [],
         label: '',
+        // Default methodology values
+        nature: 'TRANSFER',
+        automation: 'INFORMATIVE',
+        sensitivity: 'STANDARD',
+        agentivity: null,
+        asymmetry: null,
+        irreversibility: null,
+        scalability: null,
+        opacity: null,
       },
     } as CanvasEdge
 
