@@ -100,9 +100,13 @@ model Sia {
   geographicScope String[]  // Pays/régions concernés
 
   // Cadrage existant
-  decisionType    DecisionType
+  decisionType    DecisionType @default(INFORMATIVE)
+  dataTypes       String[]     // Types de données traitées
   populations     String[]
   hasVulnerable   Boolean   @default(false)
+
+  // Scores de vigilance (calculés)
+  vigilanceScores Json?
 
   // Parties prenantes (NOUVEAU)
   stakeholders    Json?     // [{role, impact, powerLevel}]
@@ -123,7 +127,7 @@ model Sia {
   members     SiaMember[]
   nodes       Node[]
   edges       Edge[]
-  dilemmas    Dilemma[]
+  tensions    Tension[]
   actions     Action[]
   versions    Version[]
 
@@ -159,6 +163,8 @@ enum Sector {
   EDUCATION
   TRANSPORT
   INSURANCE
+  SECURITY
+  MARKETING
   OTHER
 }
 
@@ -236,6 +242,9 @@ model Node {
   // Position React Flow
   positionX  Float  @default(0)
   positionY  Float  @default(0)
+
+  // Style personnalisé (React Flow)
+  style     Json?
 
   // Annotation des domaines (aide le moteur de détection)
   reinforcesDomains EthicalDomain[]  // Ce bloc renforce ces domaines
@@ -340,13 +349,13 @@ model Edge {
   nature    FlowNature
 
   // NOUVEAU : Intention du flux (pourquoi ce flux existe)
-  intent    FlowIntent
+  intent    FlowIntent?
 
   // NOUVEAU : Canal technique
   channel   FlowChannel @default(API)
 
   // === DONNÉES TRANSPORTÉES (unique endroit où c'est défini) ===
-  dataCategories DataCategory[]
+  dataCategories String[]
   sensitivity    Sensitivity     @default(STANDARD)
 
   // Niveau d'automatisation
@@ -358,9 +367,19 @@ model Edge {
   // Criticité du flux
   criticality    FlowCriticality @default(IMPORTANT)
 
+  // === PROFIL ÉTHIQUE (5 dimensions 1-5) ===
+  agentivity     Float?   // Niveau d'agentivité
+  asymmetry      Float?   // Asymétrie informationnelle
+  irreversibility Float?  // Irréversibilité
+  scalability    Float?   // Scalabilité
+  opacity        Float?   // Opacité
+
   // Métadonnées
   frequency      Frequency       @default(ON_DEMAND)
   legalBasis     LegalBasis?
+
+  // Relations
+  tensionEdges   TensionEdge[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -378,16 +397,24 @@ enum FlowDirection {
 }
 
 enum FlowNature {
-  COLLECT         // Collecte de données
+  COLLECTION      // Collecte de données
+  STORAGE         // Stockage
+  PROCESSING      // Traitement général
   INFERENCE       // Traitement/inférence
-  ENRICHMENT      // Enrichissement de données
   DECISION        // Prise de décision
+  SCORING         // Notation/scoring
   RECOMMENDATION  // Recommandation
+  PERSONALIZATION // Personnalisation
   NOTIFICATION    // Notification/affichage
+  TRANSFER        // Transfert simple
+  MONITORING      // Surveillance
+  MODERATION      // Modération de contenu
+  PREDICTION      // Prédiction
+  RISK_SCORING    // Score de risque
+  PROFILING       // Profilage
   LEARNING        // Apprentissage
   CONTROL         // Contrôle/supervision
-  TRANSFER        // Transfert simple
-  STORAGE         // Stockage
+  ENRICHMENT      // Enrichissement de données
 }
 
 // NOUVEAU : Intention du flux
@@ -459,61 +486,78 @@ enum LegalBasis {
 }
 
 // ============================================
-// DILEMMES ÉTHIQUES
+// TENSIONS ÉTHIQUES
 // ============================================
 
-model Dilemma {
+model Tension {
   id     String @id @default(cuid())
   siaId  String
   sia    Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
 
-  // Format "Domaine A ↔ Domaine B"
-  domainA EthicalDomain
-  domainB EthicalDomain
+  // Pattern de tension (ex: PRIVACY_VS_TRANSPARENCY)
+  pattern       String
+  description   String    @db.Text
+  status        TensionStatus @default(DETECTED)
+  level         TensionLevel  @default(INDIVIDUAL)
 
-  // Règle qui a déclenché ce dilemme
-  ruleId     String       // Ex: "E-01", "S-03", "D-02"
-  ruleName   String       // Ex: "API externe pour fonction critique"
-  ruleFamily RuleFamily
+  // Domaines impactés
+  impactedDomains String[]
 
-  // Description générée
-  formulation String @db.Text
+  // Scoring
+  severity        Float?     // Sévérité de base (1-5)
+  exposureScore   Float?     // Score d'exposition calculé
+  residualScore   Float?     // Score résiduel après actions
 
-  // NOUVEAU : Mécanisme qui rend le dilemme inévitable
-  mechanism   String @db.Text
+  // Détection
+  triggeredByRule   String?    // Règle qui a détecté cette tension
+  detectionReason   String?    @db.Text
+
+  // Facteurs
+  activeAmplifiers  String[]
+  activeMitigators  String[]
 
   // Traçabilité vers le graphe
-  affectedNodeIds String[]
-  affectedEdgeIds String[]
+  relatedNodeIds    String[]
 
-  // Qualification
-  severity            Int      // 1-5
-  aggravatingFactors  String[]
-  mitigatingFactors   String[]
-
-  // Aide à l'arbitrage
-  questionsToConsider    String[]
-  stakeholdersToConsult  String[]
-
-  // NOUVEAU : Guidance (sans juger moralement)
-  acceptablePatterns     String[]  // Ex: "trade-off explicite + seuils"
-  requiredEvidences      String[]  // Ex: "Test de biais", "Procédure de recours"
-
-  // Statut
-  status DilemmaStatus @default(DETECTED)
-
-  // Arbitrage
-  arbitration Arbitration?
-
-  // Actions liées
-  actions Action[]
+  // Relations
+  tensionEdges      TensionEdge[]
+  arbitration       Arbitration?
+  actions           Action[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([siaId])
-  @@index([ruleFamily])
+  @@index([pattern])
   @@index([status])
+}
+
+model TensionEdge {
+  id        String  @id @default(cuid())
+  tensionId String
+  tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
+  edgeId    String
+  edge      Edge    @relation(fields: [edgeId], references: [id], onDelete: Cascade)
+
+  @@unique([tensionId, edgeId])
+  @@index([tensionId])
+  @@index([edgeId])
+}
+
+enum TensionStatus {
+  DETECTED
+  VALIDATED
+  CONTESTED
+  ARBITRATED
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+enum TensionLevel {
+  INDIVIDUAL
+  RELATIONAL
+  SYSTEMIC
 }
 
 enum RuleFamily {
@@ -524,38 +568,35 @@ enum RuleFamily {
   GOVERNANCE    // G - Organisation autour du système
 }
 
-enum DilemmaStatus {
-  DETECTED
-  VALIDATED
-  CONTESTED
-  ARBITRATED
-  IN_PROGRESS
-  RESOLVED
-}
-
 // ============================================
 // ARBITRAGE (4 questions + score de maturité)
 // ============================================
 
 model Arbitration {
   id        String  @id @default(cuid())
-  dilemmaId String  @unique
-  dilemma   Dilemma @relation(fields: [dilemmaId], references: [id], onDelete: Cascade)
+  tensionId String  @unique
+  tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
 
-  // Question 1 : Quel pôle priorisez-vous ?
-  prioritizedDomain EthicalDomain
+  // Décision prise
+  decision          String
+  justification     String    @db.Text
 
-  // Question 2 : Pourquoi cette priorisation ?
-  justificationCategory JustificationCategory
-  justificationText     String @db.Text
+  // Mesures sélectionnées
+  selectedMeasures  String[]
 
-  // Question 3 : Comment limitez-vous les risques ?
-  mitigationActions String[]
+  // Analyse complémentaire
+  benefitAnalysis   String?   @db.Text
+  riskAcceptance    String?   @db.Text
+  rejectionReason   String?   @db.Text
 
-  // Question 4 : Quand réviser ?
-  revisionTriggers  RevisionTrigger[]
-  revisionDate      DateTime?
-  revisionCondition String?
+  // Proportionnalité et contestabilité
+  proportionality   String?   @db.Text
+  contestability    String?   @db.Text
+
+  // Révision
+  revisionConditions    String?   @db.Text
+  compensatoryMeasures  String?   @db.Text
+  nextReviewDate        DateTime?
 
   // NOUVEAU : Score de maturité (0-4)
   maturityLevel ArbitrationMaturity @default(RECOGNIZED)
@@ -570,45 +611,23 @@ model Arbitration {
   arbitratedBy   User?    @relation(fields: [arbitratedById], references: [id])
   arbitratedAt   DateTime @default(now())
 
+  validatedById  String?
+  validatedAt    DateTime?
+
   // Évidences fournies (pour niveau 3+)
   evidences Evidence[]
-
-  // Actions générées
-  actions Action[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// NOUVEAU : Score de maturité de l'arbitrage
+// Score de maturité de l'arbitrage
 enum ArbitrationMaturity {
-  NOT_TREATED   // 0 - Dilemme non reconnu
-  RECOGNIZED    // 1 - Reconnu mais options non analysées
+  NOT_TREATED   // 0 - Tension non reconnue
+  RECOGNIZED    // 1 - Reconnue mais options non analysées
   DECIDED       // 2 - Trade-off explicite mais sans preuves
   TESTED        // 3 - Preuves (tests, red-team, audits)
   MONITORED     // 4 - KPIs + alerting + recours + revue
-}
-
-enum JustificationCategory {
-  REGULATORY_CONSTRAINT   // Une réglementation impose ce choix
-  USER_EXPECTATIONS       // Les utilisateurs ont exprimé ce besoin
-  ECONOMIC_CONSTRAINT     // Raisons budgétaires
-  TECHNICAL_CONSTRAINT    // Limitations techniques
-  STRATEGIC_CHOICE        // Décision stratégique délibérée
-  OTHER
-}
-
-// NOUVEAU : Triggers de révision structurés
-enum RevisionTrigger {
-  DATA_SOURCE_CHANGE      // Changement de source de données
-  MODEL_CHANGE            // Changement de modèle
-  PROVIDER_CHANGE         // Changement de fournisseur
-  NEW_USER_GROUP          // Nouveau groupe d'utilisateurs
-  NEW_GEOGRAPHIC_SCOPE    // Nouveau périmètre géographique
-  INCIDENT                // Incident survenu
-  REGULATORY_CHANGE       // Changement réglementaire
-  SCHEDULED_REVIEW        // Revue programmée
-  DRIFT_DETECTED          // Dérive détectée
 }
 
 model DivergentPosition {
@@ -634,26 +653,32 @@ model Action {
 
   // Liens
   dilemmaId     String?
-  dilemma       Dilemma?     @relation(fields: [dilemmaId], references: [id], onDelete: SetNull)
-  arbitrationId String?
-  arbitration   Arbitration? @relation(fields: [arbitrationId], references: [id], onDelete: SetNull)
+  dilemma       Tension?     @relation(fields: [dilemmaId], references: [id], onDelete: SetNull)
 
   // Contenu
   title       String
   description String?  @db.Text
 
   // Type d'action selon la méthodologie
-  actionType ActionType
+  actionType ActionType @default(MITIGATION)
   category   ActionCategory
 
   // Domaine cible
   targetDomain   EthicalDomain?
   expectedImpact Int?  // -2 à +2
+  estimatedImpact Json?  // Impact estimé par domaine
 
   // Priorisation
   priority Priority @default(MEDIUM)
   effort   Effort   @default(MEDIUM)
   status   ActionStatus @default(TODO)
+
+  // Traçabilité
+  templateId  String?
+  sourceRule  String?
+
+  // Checklist intégrée
+  checklist   Json?
 
   // Dates
   dueDate     DateTime?
@@ -764,7 +789,8 @@ model Version {
   snapshot  Json
   changelog String?  @db.Text
 
-  createdAt DateTime @default(now())
+  createdById String
+  createdAt   DateTime @default(now())
 
   @@unique([siaId, number])
   @@index([siaId])
