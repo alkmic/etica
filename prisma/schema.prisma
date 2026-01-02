@@ -494,30 +494,58 @@ model Tension {
   siaId  String
   sia    Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
 
-  // Pattern de tension (ex: PRIVACY_VS_TRANSPARENCY)
-  pattern       String
-  description   String    @db.Text
+  // Dilemme éthique (Domaine A vs Domaine B)
+  domainA   EthicalDomain?
+  domainB   EthicalDomain?
+
+  // Règle qui a détecté ce dilemme
+  ruleId     String
+  ruleName   String?
+  ruleFamily RuleFamily @default(STRUCTURAL)
+
+  // Description du dilemme
+  formulation String    @db.Text
+  mechanism   String?   @db.Text
+
+  // Legacy fields (for backward compatibility with canvas route)
+  pattern       String?
+  description   String?   @db.Text
+
+  // Statut et niveau
   status        TensionStatus @default(DETECTED)
   level         TensionLevel  @default(INDIVIDUAL)
 
-  // Domaines impactés
+  // Scoring
+  severity        Int        @default(3)  // Sévérité 1-5
+  maturity        Int        @default(0)  // Maturité 0-4
+  baseSeverity    Float?
+  calculatedSeverity Float?
+  exposureScore   Float?
+  residualScore   Float?
+
+  // Domaines impactés (legacy)
   impactedDomains String[]
 
-  // Scoring
-  severity        Float?     // Sévérité de base (1-5)
-  exposureScore   Float?     // Score d'exposition calculé
-  residualScore   Float?     // Score résiduel après actions
-
   // Détection
-  triggeredByRule   String?    // Règle qui a détecté cette tension
+  triggeredByRule   String?
   detectionReason   String?    @db.Text
 
-  // Facteurs
-  activeAmplifiers  String[]
-  activeMitigators  String[]
+  // Facteurs aggravants/atténuants
+  aggravatingFactors  String[]
+  mitigatingFactors   String[]
+  activeAmplifiers    String[]
+  activeMitigators    String[]
 
   // Traçabilité vers le graphe
+  affectedNodeIds   String[]
+  affectedEdgeIds   String[]
   relatedNodeIds    String[]
+
+  // Guidance pour l'arbitrage
+  questionsToConsider    String[]
+  stakeholdersToConsult  String[]
+  acceptablePatterns     String[]
+  requiredEvidences      String[]
 
   // Relations
   tensionEdges      TensionEdge[]
@@ -528,7 +556,7 @@ model Tension {
   updatedAt DateTime @updatedAt
 
   @@index([siaId])
-  @@index([pattern])
+  @@index([ruleId])
   @@index([status])
 }
 
