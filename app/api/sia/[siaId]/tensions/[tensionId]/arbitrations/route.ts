@@ -42,14 +42,14 @@ export async function POST(
       )
     }
 
-    // Check tension exists and include existing arbitration
+    // Check tension exists and include existing arbitrations
     const tension = await db.tension.findFirst({
       where: {
         id: tensionId,
         siaId,
       },
       include: {
-        arbitration: true,
+        arbitrations: true,
       },
     })
 
@@ -61,7 +61,7 @@ export async function POST(
     }
 
     // Check if arbitration already exists
-    if (tension.arbitration) {
+    if (tension.arbitrations && tension.arbitrations.length > 0) {
       return NextResponse.json(
         { error: 'Cette tension a déjà été arbitrée' },
         { status: 409 }

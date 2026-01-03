@@ -49,7 +49,7 @@ export async function GET(
             },
           },
         },
-        arbitration: true,
+        arbitrations: true,
       },
       orderBy: [
         { severity: 'desc' },
@@ -57,7 +57,13 @@ export async function GET(
       ],
     })
 
-    return NextResponse.json(tensions)
+    // Transform to include arbitration (singular) for backwards compatibility
+    const tensionsWithArbitration = tensions.map(t => ({
+      ...t,
+      arbitration: t.arbitrations[0] || null,
+    }))
+
+    return NextResponse.json(tensionsWithArbitration)
   } catch (error) {
     console.error('Error fetching tensions:', error)
     return NextResponse.json(

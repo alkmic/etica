@@ -45,7 +45,7 @@ export async function GET(
                 edge: true,
               },
             },
-            arbitration: true,
+            arbitrations: true,
             actions: true,
           },
         },

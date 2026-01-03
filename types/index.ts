@@ -44,7 +44,8 @@ export type SiaWithRelations = Sia & {
 
 export type TensionWithRelations = Tension & {
   actions: Action[]
-  arbitration: Arbitration | null
+  arbitrations: Arbitration[]
+  arbitration?: Arbitration | null // Computed from arbitrations[0] for backwards compatibility
   comments: CommentWithAuthor[]
   tensionEdges: { edge: Edge }[]
 }
@@ -107,12 +108,12 @@ export interface CanvasEdge {
 export interface WizardData {
   name: string
   description?: string
-  domain: string
+  sector: string            // Renamed from "domain"
   dataTypes: string[]
   decisionType: string
   populations: string[]
   hasVulnerable: boolean
-  scale: string
+  userScale: string         // Renamed from "scale"
 }
 
 // Types pour les formulaires

@@ -53,7 +53,7 @@ export async function GET(
             },
           },
         },
-        arbitration: true,
+        arbitrations: true,
         actions: {
           orderBy: { priority: 'desc' },
         },
@@ -67,7 +67,13 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(tension)
+    // Add arbitration (singular) for backwards compatibility
+    const tensionWithArbitration = {
+      ...tension,
+      arbitration: tension.arbitrations[0] || null,
+    }
+
+    return NextResponse.json(tensionWithArbitration)
   } catch (error) {
     console.error('Error fetching tension:', error)
     return NextResponse.json(

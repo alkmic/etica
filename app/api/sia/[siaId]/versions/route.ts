@@ -79,7 +79,7 @@ export async function POST(
         tensions: {
           include: {
             tensionEdges: true,
-            arbitration: true,
+            arbitrations: true,
           },
         },
         actions: {

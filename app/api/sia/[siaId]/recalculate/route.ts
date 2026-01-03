@@ -34,7 +34,7 @@ export async function POST(
         edges: true,
         tensions: {
           include: {
-            arbitration: true,
+            arbitrations: true,
           },
         },
         actions: true,
@@ -135,7 +135,7 @@ export async function POST(
     // Re-fetch tensions after adding new ones
     const updatedTensions = await db.tension.findMany({
       where: { siaId: sia.id },
-      include: { arbitration: true },
+      include: { arbitrations: true },
     })
 
     // Prepare data for scoring
@@ -157,8 +157,8 @@ export async function POST(
       impactedDomains: tension.impactedDomains,
       severity: tension.severity,
       status: tension.status,
-      hasArbitration: !!tension.arbitration,
-      arbitrationDecision: tension.arbitration?.decision,
+      hasArbitration: tension.arbitrations && tension.arbitrations.length > 0,
+      arbitrationDecision: tension.arbitrations?.[0]?.decision,
     }))
 
     const actionsData = sia.actions.map((action) => ({
