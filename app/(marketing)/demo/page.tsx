@@ -28,7 +28,7 @@ const demoSias = [
   {
     id: 'demo-scoring',
     name: 'Système de scoring crédit',
-    domain: 'Finance',
+    sector: 'Finance',
     status: 'ACTIVE',
     description: 'Évaluation automatique de la solvabilité des demandeurs de crédit basée sur des algorithmes de machine learning.',
     vigilanceLevel: 4,
@@ -57,7 +57,7 @@ const demoSias = [
   {
     id: 'demo-recrutement',
     name: 'Tri automatique de candidatures',
-    domain: 'Ressources Humaines',
+    sector: 'Ressources Humaines',
     status: 'ACTIVE',
     description: 'Analyse automatique des CV et pré-sélection des candidats pour les postes ouverts.',
     vigilanceLevel: 3,
@@ -86,7 +86,7 @@ const demoSias = [
   {
     id: 'demo-chatbot',
     name: 'Chatbot service client',
-    domain: 'Commerce',
+    sector: 'Commerce',
     status: 'ACTIVE',
     description: 'Assistant conversationnel IA pour le support client 24/7 avec capacités de résolution automatique.',
     vigilanceLevel: 2,
@@ -144,7 +144,7 @@ function DemoSiaCard({ sia }: { sia: typeof demoSias[0] }) {
             <CardTitle className="text-lg">{sia.name}</CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
-                {sia.domain}
+                {sia.sector}
               </Badge>
               <Badge className={`text-xs ${status.color}`}>
                 {status.label}

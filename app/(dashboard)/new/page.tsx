@@ -23,17 +23,17 @@ type WizardStep = 1 | 2
 interface WizardData {
   name: string
   description: string
-  domain: string
+  sector: string
   decisionType: string
-  scale: string
+  userScale: string
 }
 
 const initialData: WizardData = {
   name: '',
   description: '',
-  domain: '',
+  sector: '',
   decisionType: '',
-  scale: '',
+  userScale: '',
 }
 
 const steps = [
@@ -55,9 +55,9 @@ export default function NewSiaPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return data.name.length >= 2 && data.domain !== ''
+        return data.name.length >= 2 && data.sector !== ''
       case 2:
-        return data.decisionType !== '' && data.scale !== ''
+        return data.decisionType !== '' && data.userScale !== ''
       default:
         return false
     }
@@ -223,19 +223,19 @@ export default function NewSiaPage() {
                   Permet d'activer les règles de détection spécifiques à votre contexte.
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {Object.values(SIA_DOMAINS).map((domain) => (
+                  {Object.values(SIA_DOMAINS).map((sectorItem) => (
                     <button
-                      key={domain.id}
+                      key={sectorItem.id}
                       type="button"
-                      onClick={() => updateData({ domain: domain.id })}
+                      onClick={() => updateData({ sector: sectorItem.id })}
                       className={cn(
                         'flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors',
-                        data.domain === domain.id
+                        data.sector === sectorItem.id
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/50'
                       )}
                     >
-                      <span className="text-sm font-medium">{domain.label}</span>
+                      <span className="text-sm font-medium">{sectorItem.label}</span>
                     </button>
                   ))}
                 </div>
@@ -295,26 +295,26 @@ export default function NewSiaPage() {
                   </p>
                 </div>
                 <RadioGroup
-                  value={data.scale}
-                  onValueChange={(value) => updateData({ scale: value })}
+                  value={data.userScale}
+                  onValueChange={(value) => updateData({ userScale: value })}
                   className="grid grid-cols-2 md:grid-cols-3 gap-3"
                 >
-                  {Object.values(SCALE_LEVELS).map((scale) => (
+                  {Object.values(SCALE_LEVELS).map((scaleItem) => (
                     <label
-                      key={scale.id}
+                      key={scaleItem.id}
                       className={cn(
                         'flex flex-col p-3 rounded-lg border-2 cursor-pointer transition-colors',
-                        data.scale === scale.id
+                        data.userScale === scaleItem.id
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/50'
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        <RadioGroupItem value={scale.id} />
-                        <span className="font-medium">{scale.range}</span>
+                        <RadioGroupItem value={scaleItem.id} />
+                        <span className="font-medium">{scaleItem.range}</span>
                       </div>
                       <span className="text-xs text-muted-foreground mt-1 ml-6">
-                        {scale.label}
+                        {scaleItem.label}
                       </span>
                     </label>
                   ))}

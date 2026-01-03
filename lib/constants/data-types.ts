@@ -307,7 +307,7 @@ export const SCALE_LEVELS = {
 
 export type ScaleId = keyof typeof SCALE_LEVELS
 
-// Domaines d'application
+// Secteurs d'application (synchronisé avec Prisma enum Sector)
 export const SIA_DOMAINS = {
   HEALTH: { id: 'HEALTH', label: 'Santé', icon: 'Heart' },
   FINANCE: { id: 'FINANCE', label: 'Finance & Banque', icon: 'Building' },
@@ -317,6 +317,7 @@ export const SIA_DOMAINS = {
   ADMINISTRATION: { id: 'ADMINISTRATION', label: 'Administration publique', icon: 'Landmark' },
   EDUCATION: { id: 'EDUCATION', label: 'Éducation', icon: 'GraduationCap' },
   TRANSPORT: { id: 'TRANSPORT', label: 'Transport', icon: 'Car' },
+  INSURANCE: { id: 'INSURANCE', label: 'Assurance', icon: 'ShieldCheck' },
   SECURITY: { id: 'SECURITY', label: 'Sécurité', icon: 'Shield' },
   MARKETING: { id: 'MARKETING', label: 'Marketing & Publicité', icon: 'Megaphone' },
   OTHER: { id: 'OTHER', label: 'Autre', icon: 'MoreHorizontal' },

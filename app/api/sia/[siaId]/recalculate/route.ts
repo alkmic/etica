@@ -52,7 +52,7 @@ export async function POST(
       decisionType: sia.decisionType,
       dataTypes: sia.dataTypes,
       hasVulnerable: sia.hasVulnerable,
-      scale: sia.scale,
+      userScale: sia.userScale,
     }
 
     const edgesData = sia.edges.map((edge) => ({

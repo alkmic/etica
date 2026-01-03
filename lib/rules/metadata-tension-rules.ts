@@ -9,10 +9,10 @@ export interface SiaMetadata {
   id: string
   name: string
   description: string
-  domain: string
+  sector: string
   decisionType: string
   hasVulnerable: boolean
-  scale: string
+  userScale: string
   dataTypes: string[]
   populations: string[]
 }
@@ -127,7 +127,7 @@ const METADATA_RULES: MetadataRule[] = [
     pattern: 'PERSONALIZATION_VS_AUTONOMY',
     title: 'Personnalisation vs Autonomie',
     condition: (sia) => sia.dataTypes.some(dt => BEHAVIORAL_DATA_TYPES.includes(dt)) &&
-                        (sia.decisionType === 'RECOMMENDATION' || sia.domain === 'COMMERCE' || sia.domain === 'MEDIA'),
+                        (sia.decisionType === 'RECOMMENDATION' || sia.sector === 'COMMERCE' || sia.sector === 'MEDIA'),
     getReason: () => 'La personnalisation basée sur le comportement peut influencer les choix des utilisateurs.',
     confidence: 'MEDIUM',
     impactedDomains: ['AUTONOMY', 'TRANSPARENCY'],
@@ -143,7 +143,7 @@ const METADATA_RULES: MetadataRule[] = [
     id: 'M006',
     pattern: 'STANDARDIZATION_VS_SINGULARITY',
     title: 'Standardisation vs Singularité',
-    condition: (sia) => (sia.scale === 'NATIONAL' || sia.scale === 'INTERNATIONAL') &&
+    condition: (sia) => (sia.userScale === 'NATIONAL' || sia.userScale === 'INTERNATIONAL') &&
                         (sia.decisionType === 'AUTO_DECISION' || sia.decisionType === 'ASSISTED_DECISION'),
     getReason: () => 'Les décisions à grande échelle doivent permettre des exceptions pour les cas particuliers.',
     confidence: 'MEDIUM',
@@ -161,7 +161,7 @@ const METADATA_RULES: MetadataRule[] = [
     pattern: 'PRECISION_VS_MINIMIZATION',
     title: 'Précision vs Minimisation',
     condition: (sia) => sia.dataTypes.some(dt => FINANCIAL_DATA_TYPES.includes(dt)) &&
-                        sia.domain === 'FINANCE',
+                        sia.sector === 'FINANCE',
     getReason: () => 'Le traitement de données financières doit respecter le principe de minimisation.',
     confidence: 'MEDIUM',
     impactedDomains: ['PRIVACY'],
@@ -177,7 +177,7 @@ const METADATA_RULES: MetadataRule[] = [
     id: 'M008',
     pattern: 'AUTOMATION_VS_RECOURSE',
     title: 'Risque d\'automatisation excessive',
-    condition: (sia) => (sia.domain === 'JUSTICE' || sia.domain === 'ADMINISTRATION') &&
+    condition: (sia) => (sia.sector === 'JUSTICE' || sia.sector === 'ADMINISTRATION') &&
                         sia.decisionType !== 'INFORMATIVE',
     getReason: () => 'Dans le domaine public, les décisions algorithmiques requièrent des garanties de recours renforcées.',
     confidence: 'HIGH',
@@ -234,7 +234,7 @@ const METADATA_RULES: MetadataRule[] = [
     condition: (sia) => sia.populations.some(p => p.toLowerCase().includes('employé') ||
                                                   p.toLowerCase().includes('salarié') ||
                                                   p.toLowerCase().includes('candidat')) &&
-                        (sia.domain === 'RH' || sia.domain === 'TRAVAIL'),
+                        (sia.sector === 'RH' || sia.sector === 'TRAVAIL'),
     getReason: () => 'La surveillance des employés doit être proportionnée et transparente.',
     confidence: 'MEDIUM',
     impactedDomains: ['TRANSPARENCY', 'AUTONOMY', 'PRIVACY'],
@@ -332,7 +332,7 @@ export function getMetadataRiskSummary(sia: SiaMetadata): {
     factors.push('Populations vulnérables impactées')
   }
 
-  if (sia.scale === 'NATIONAL' || sia.scale === 'INTERNATIONAL') {
+  if (sia.userScale === 'NATIONAL' || sia.userScale === 'INTERNATIONAL') {
     factors.push('Déploiement à grande échelle')
   }
 
@@ -341,7 +341,7 @@ export function getMetadataRiskSummary(sia: SiaMetadata): {
     factors.push('Données sensibles traitées')
   }
 
-  if (sia.domain === 'JUSTICE' || sia.domain === 'ADMINISTRATION') {
+  if (sia.sector === 'JUSTICE' || sia.sector === 'ADMINISTRATION') {
     factors.push('Secteur public sensible')
   }
 

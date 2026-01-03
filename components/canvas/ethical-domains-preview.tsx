@@ -34,9 +34,9 @@ import { CanvasNode, CanvasEdge } from '@/lib/stores/canvas-store'
 
 interface EthicalDomainsPreviewProps {
   sia: {
-    domain: string
+    sector: string
     decisionType: string
-    scale: string
+    userScale: string
     hasVulnerable: boolean
     dataTypes: string[]
   }
@@ -73,9 +73,9 @@ export function EthicalDomainsPreview({
   // Prepare context for domain detection
   const detectionContext: DomainDetectionContext = useMemo(() => ({
     sia: {
-      domain: sia.domain,
+      sector: sia.sector,
       decisionType: sia.decisionType,
-      scale: sia.scale,
+      userScale: sia.userScale,
       hasVulnerable: sia.hasVulnerable,
       dataTypes: sia.dataTypes || [],
     },

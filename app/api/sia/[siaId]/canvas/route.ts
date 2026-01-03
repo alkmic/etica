@@ -196,11 +196,11 @@ export async function PUT(
       const siaContext = {
         id: updatedSia.id,
         name: updatedSia.name,
-        domain: updatedSia.domain,
+        sector: updatedSia.sector,
         decisionType: updatedSia.decisionType,
         dataTypes: updatedSia.dataTypes,
         hasVulnerable: updatedSia.hasVulnerable,
-        scale: updatedSia.scale,
+        userScale: updatedSia.userScale,
       }
 
       const nodeContexts = updatedSia.nodes.map((node) => ({

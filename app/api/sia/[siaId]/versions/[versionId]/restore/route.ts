@@ -56,7 +56,8 @@ export async function POST(
       description?: string
       status?: string
       decisionType?: string
-      scale?: string
+      sector?: string
+      userScale?: string
       dataTypes?: string[]
       populations?: string[]
       hasVulnerable?: boolean
@@ -108,9 +109,10 @@ export async function POST(
         data: {
           name: snapshot.name || sia.name,
           description: snapshot.description || sia.description,
-          status: (snapshot.status as 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED') || sia.status,
+          status: (snapshot.status as 'DRAFT' | 'ACTIVE' | 'REVIEW' | 'ARCHIVED') || sia.status,
           decisionType: (snapshot.decisionType as 'INFORMATIVE' | 'RECOMMENDATION' | 'ASSISTED_DECISION' | 'AUTO_DECISION') || sia.decisionType,
-          scale: (snapshot.scale as 'LOCAL' | 'REGIONAL' | 'NATIONAL' | 'INTERNATIONAL') || sia.scale,
+          sector: (snapshot.sector as 'HEALTH' | 'FINANCE' | 'HR' | 'COMMERCE' | 'JUSTICE' | 'ADMINISTRATION' | 'EDUCATION' | 'TRANSPORT' | 'INSURANCE' | 'SECURITY' | 'MARKETING' | 'OTHER') || sia.sector,
+          userScale: (snapshot.userScale as 'TINY' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'VERY_LARGE') || sia.userScale,
           dataTypes: snapshot.dataTypes || sia.dataTypes,
           populations: snapshot.populations || sia.populations,
           hasVulnerable: snapshot.hasVulnerable ?? sia.hasVulnerable,

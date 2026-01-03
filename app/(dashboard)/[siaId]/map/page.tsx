@@ -35,9 +35,9 @@ const edgeTypes = {
 
 // SIA metadata interface
 interface SiaMetadata {
-  domain: string
+  sector: string
   decisionType: string
-  scale: string
+  userScale: string
   hasVulnerable: boolean
   dataTypes: string[]
 }
@@ -123,9 +123,9 @@ function MapCanvas() {
 
           // Store SIA metadata for domain detection
           setSiaMetadata({
-            domain: data.domain || '',
+            sector: data.sector || '',
             decisionType: data.decisionType || '',
-            scale: data.scale || '',
+            userScale: data.userScale || '',
             hasVulnerable: data.hasVulnerable || false,
             dataTypes: data.dataTypes || [],
           })
@@ -515,7 +515,7 @@ function MapCanvas() {
         <EmptyStateWizard
           onAddNode={handleAddNode}
           onLoadTemplate={handleLoadTemplate}
-          siaDomain={siaMetadata?.domain}
+          siaDomain={siaMetadata?.sector}
         />
       </div>
     )

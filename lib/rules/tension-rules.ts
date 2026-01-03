@@ -9,10 +9,10 @@ import { DomainId } from '@/lib/constants/domains'
 export interface SiaContext {
   id: string
   name: string
-  domain: string
+  sector: string
   decisionType: string
   hasVulnerable: boolean
-  scale: string
+  userScale: string
   dataTypes: string[]
 }
 
@@ -324,7 +324,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système à grande échelle',
     description: 'Le système opère à grande échelle, risquant d\'appliquer un traitement uniforme inadapté.',
     condition: (sia, _nodes, edges) => {
-      return (sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE') && edges.length > 0
+      return (sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE') && edges.length > 0
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
     confidence: 'MEDIUM',
@@ -339,7 +339,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Décision automatique à grande échelle',
     description: 'Des décisions automatiques sont appliquées uniformément à une large population.',
     condition: (sia, nodes, edges) => {
-      const isLargeScale = sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE'
+      const isLargeScale = sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE'
       const hasDecision = hasNodeOfType(nodes, 'DECISION')
       return isLargeScale && hasDecision
     },
@@ -536,7 +536,7 @@ const DETECTION_RULES: DetectionRule[] = [
     condition: (sia, nodes, edges) => {
       const hasAction = hasNodeOfType(nodes, 'ACTION')
       const hasStakeholder = hasNodeOfType(nodes, 'STAKEHOLDER')
-      const isHealthOrSafety = ['HEALTH', 'SECURITY', 'INSURANCE'].includes(sia.domain)
+      const isHealthOrSafety = ['HEALTH', 'SECURITY', 'INSURANCE'].includes(sia.sector)
       return hasAction && hasStakeholder && isHealthOrSafety
     },
     getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'ACTION'),
@@ -593,7 +593,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système financier',
     description: 'Les décisions financières peuvent exclure certaines populations de services essentiels.',
     condition: (sia, nodes, edges) => {
-      const isFinance = sia.domain === 'FINANCE' || sia.domain === 'INSURANCE'
+      const isFinance = sia.sector === 'FINANCE' || sia.sector === 'INSURANCE'
       const hasDecision = hasNodeOfType(nodes, 'DECISION', 'TREATMENT')
       return isFinance && hasDecision
     },
@@ -610,7 +610,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système RH/Emploi',
     description: 'Les décisions RH peuvent reproduire des biais historiques de discrimination.',
     condition: (sia, nodes, edges) => {
-      const isHR = sia.domain === 'HR' || sia.domain === 'EMPLOYMENT'
+      const isHR = sia.sector === 'HR' || sia.sector === 'EMPLOYMENT'
       const hasDecision = hasNodeOfType(nodes, 'DECISION', 'TREATMENT')
       return isHR && hasDecision
     },
@@ -627,7 +627,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système judiciaire',
     description: 'Les prédictions judiciaires risquent de condamner sur le passé et non sur les faits.',
     condition: (sia, nodes, edges) => {
-      const isJustice = sia.domain === 'JUSTICE' || sia.domain === 'LEGAL'
+      const isJustice = sia.sector === 'JUSTICE' || sia.sector === 'LEGAL'
       return isJustice && edges.length > 0
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
@@ -643,7 +643,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système éducatif',
     description: 'Les systèmes éducatifs doivent s\'adapter à la diversité des apprenants.',
     condition: (sia, nodes, edges) => {
-      const isEducation = sia.domain === 'EDUCATION'
+      const isEducation = sia.sector === 'EDUCATION'
       return isEducation && edges.length > 0
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
@@ -659,7 +659,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système commercial/marketing',
     description: 'Les techniques de personnalisation commerciale peuvent manipuler les choix.',
     condition: (sia, nodes, edges) => {
-      const isCommerce = sia.domain === 'COMMERCE' || sia.domain === 'MARKETING'
+      const isCommerce = sia.sector === 'COMMERCE' || sia.sector === 'MARKETING'
       return isCommerce && edges.length > 0
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
@@ -675,7 +675,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système de santé',
     description: 'Les systèmes de santé nécessitent une prudence particulière et des garanties fortes.',
     condition: (sia, nodes, edges) => {
-      const isHealth = sia.domain === 'HEALTH'
+      const isHealth = sia.sector === 'HEALTH'
       return isHealth && edges.length > 0
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
@@ -691,7 +691,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système administratif public',
     description: 'Les décisions administratives impactent l\'accès aux droits et services publics.',
     condition: (sia, nodes, edges) => {
-      const isAdmin = sia.domain === 'ADMINISTRATION' || sia.domain === 'PUBLIC_SERVICE'
+      const isAdmin = sia.sector === 'ADMINISTRATION' || sia.sector === 'PUBLIC_SERVICE'
       return isAdmin && edges.length > 0
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
@@ -970,8 +970,8 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Impact sociétal à grande échelle',
     description: 'Le système opère à grande échelle avec de l\'IA, pouvant créer des effets systémiques sur la société.',
     condition: (sia, nodes, edges) => {
-      const isLargeScale = sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE' ||
-                          sia.scale === 'NATIONAL' || sia.scale === 'INTERNATIONAL'
+      const isLargeScale = sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE' ||
+                          sia.userScale === 'NATIONAL' || sia.userScale === 'INTERNATIONAL'
       const hasAI = hasNodeOfType(nodes, 'DECISION')
       return isLargeScale && hasAI
     },
@@ -1004,7 +1004,7 @@ const DETECTION_RULES: DetectionRule[] = [
     name: 'Système commercial avec personnalisation',
     description: 'Le système commercial personnalisé peut créer des tensions entre profit et loyauté envers les utilisateurs.',
     condition: (sia, nodes, edges) => {
-      const isCommercial = sia.domain === 'COMMERCE' || sia.domain === 'MARKETING' || sia.domain === 'MEDIA'
+      const isCommercial = sia.sector === 'COMMERCE' || sia.sector === 'MARKETING' || sia.sector === 'MEDIA'
       const hasPersonalization = hasNodeOfType(nodes, 'TREATMENT', 'DECISION') &&
                                  hasNodeOfType(nodes, 'STAKEHOLDER')
       return isCommercial && hasPersonalization
@@ -1023,8 +1023,8 @@ const DETECTION_RULES: DetectionRule[] = [
     description: 'Les mesures de sobriété numérique pourraient limiter l\'accès pour certaines populations.',
     condition: (sia, nodes, edges) => {
       const hasVulnerable = sia.hasVulnerable
-      const isLargeScale = sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE' ||
-                          sia.scale === 'NATIONAL' || sia.scale === 'INTERNATIONAL'
+      const isLargeScale = sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE' ||
+                          sia.userScale === 'NATIONAL' || sia.userScale === 'INTERNATIONAL'
       const hasTreatment = hasNodeOfType(nodes, 'TREATMENT', 'DECISION')
       return hasVulnerable && isLargeScale && hasTreatment
     },
@@ -1048,10 +1048,10 @@ export function detectTensions(
   // Debug logging
   console.log('[TensionDetection] Starting detection with:', {
     siaId: sia.id,
-    domain: sia.domain,
+    sector: sia.sector,
     decisionType: sia.decisionType,
     hasVulnerable: sia.hasVulnerable,
-    scale: sia.scale,
+    userScale: sia.userScale,
     dataTypes: sia.dataTypes,
     nodeCount: nodes.length,
     edgeCount: edges.length,

@@ -38,10 +38,10 @@ interface Sia {
   id: string
   name: string
   description: string
-  domain: string | null
+  sector: string | null
   status: string
   decisionType: string
-  scale: string
+  userScale: string
   dataTypes: string[]
   populations: string[]
   hasVulnerable: boolean
@@ -88,10 +88,10 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    domain: '',
+    sector: '',
     status: 'DRAFT',
     decisionType: 'INFORMATIVE',
-    scale: 'MEDIUM',
+    userScale: 'MEDIUM',
   })
 
   useEffect(() => {
@@ -104,10 +104,10 @@ export default function SettingsPage() {
           setFormData({
             name: data.name,
             description: data.description || '',
-            domain: data.domain || '',
+            sector: data.sector || '',
             status: data.status,
             decisionType: data.decisionType,
-            scale: data.scale,
+            userScale: data.userScale,
           })
         }
       } catch (error) {
@@ -267,12 +267,12 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="domain">Domaine d&apos;application</Label>
+            <Label htmlFor="sector">Secteur d&apos;activité</Label>
             <Input
-              id="domain"
-              value={formData.domain}
-              onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-              placeholder="Ex: Finance, RH, Santé..."
+              id="sector"
+              value={formData.sector}
+              onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+              placeholder="Ex: FINANCE, HR, HEALTH..."
             />
           </div>
         </CardContent>
@@ -328,8 +328,8 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <Label>Échelle d&apos;impact</Label>
             <Select
-              value={formData.scale}
-              onValueChange={(v) => setFormData({ ...formData, scale: v })}
+              value={formData.userScale}
+              onValueChange={(v) => setFormData({ ...formData, userScale: v })}
             >
               <SelectTrigger>
                 <SelectValue />

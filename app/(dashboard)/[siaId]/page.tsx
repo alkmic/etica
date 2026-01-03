@@ -47,9 +47,9 @@ interface Sia {
   name: string
   description: string
   status: string
-  domain: string
+  sector: string
   decisionType: string
-  scale: string
+  userScale: string
   dataTypes: string[]
   populations: string[]
   hasVulnerable: boolean
@@ -191,10 +191,10 @@ export default function SiaDashboardPage() {
       id: sia.id,
       name: sia.name,
       description: sia.description,
-      domain: sia.domain || '',
+      sector: sia.sector || '',
       decisionType: sia.decisionType,
       hasVulnerable: sia.hasVulnerable,
-      scale: sia.scale,
+      userScale: sia.userScale,
       dataTypes: sia.dataTypes || [],
       populations: sia.populations || [],
     })
@@ -207,10 +207,10 @@ export default function SiaDashboardPage() {
       id: sia.id,
       name: sia.name,
       description: sia.description,
-      domain: sia.domain || '',
+      sector: sia.sector || '',
       decisionType: sia.decisionType,
       hasVulnerable: sia.hasVulnerable,
-      scale: sia.scale,
+      userScale: sia.userScale,
       dataTypes: sia.dataTypes || [],
       populations: sia.populations || [],
     })

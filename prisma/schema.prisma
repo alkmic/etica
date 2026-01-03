@@ -1,4 +1,5 @@
 // prisma/schema.prisma
+// ETICA - Schéma aligné sur la méthodologie (12 domaines, 5 familles, maturité 0-4)
 
 generator client {
   provider = "prisma-client-js"
@@ -10,7 +11,7 @@ datasource db {
 }
 
 // ============================================
-// AUTHENTIFICATION
+// AUTHENTIFICATION (NE PAS MODIFIER)
 // ============================================
 
 model User {
@@ -18,18 +19,15 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   name          String?
-  password      String?   // Hash bcrypt
+  password      String?
   image         String?
   role          UserRole  @default(VIEWER)
 
-  // Relations
-  ownedSias       Sia[]     @relation("SiaOwner")
+  ownedSias       Sia[]
   memberships     SiaMember[]
-  comments        Comment[]
-  assignedActions Action[]  @relation("ActionAssignee")
-  createdTensions Tension[] @relation("TensionCreator")
+  assignedActions Action[]
+  arbitrations    Arbitration[]
 
-  // NextAuth
   accounts      Account[]
   sessions      Session[]
 
@@ -81,7 +79,7 @@ enum UserRole {
 }
 
 // ============================================
-// SIA (Système d'Intelligence Artificielle)
+// SIA - Système d'Intelligence Artificielle
 // ============================================
 
 model Sia {
@@ -90,50 +88,54 @@ model Sia {
   // Identité
   name        String
   description String?   @db.Text
-  domain      Domain
+  sector      Sector    @default(OTHER)  // Renommé de "domain"
   status      SiaStatus @default(DRAFT)
 
-  // Cadrage (stocké en JSON pour flexibilité)
-  dataTypes       String[]          // Types de données utilisées
-  decisionType    DecisionType
-  populations     String[]          // Populations impactées
-  hasVulnerable   Boolean           @default(false)
-  scale           Scale             @default(SMALL)
+  // Finalité
+  finalPurpose    String?   @db.Text
 
-  // Métadonnées
-  purpose         String?   @db.Text  // Finalité du système
-  context         String?   @db.Text  // Contexte d'utilisation
+  // Contexte d'usage
+  usageFrequency  Frequency @default(ON_DEMAND)
+  userScale       Scale     @default(SMALL)  // Renommé de "scale"
+  geographicScope String[]
+
+  // Cadrage (CONSERVER - utilisés dans le code existant)
+  decisionType    DecisionType @default(INFORMATIVE)
+  dataTypes       String[]
+  populations     String[]
+  hasVulnerable   Boolean   @default(false)
+
+  // Parties prenantes
+  stakeholders    Json?
+  misuseScenarios String[]
+
+  // Dépendances externes
+  hasExternalAI     Boolean   @default(false)
+  hasExternalInfra  Boolean   @default(false)
+  externalProviders String[]
 
   // Propriétaire
   ownerId     String
-  owner       User      @relation("SiaOwner", fields: [ownerId], references: [id])
+  owner       User      @relation(fields: [ownerId], references: [id])
 
-  // Membres avec permissions
+  // Relations
   members     SiaMember[]
-
-  // Composants du graphe
   nodes       Node[]
   edges       Edge[]
-
-  // Évaluation
   tensions    Tension[]
   actions     Action[]
-
-  // Historique
   versions    Version[]
 
   // Scores de vigilance calculés (cache)
-  vigilanceScores Json?     // { privacy: 3, equity: 4, ... }
-  globalScore     Float?    // Score global
+  vigilanceScores Json?
+  globalScore     Float?
 
   // Dates
   nextReviewDate DateTime?
-  lastReviewDate DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   @@index([ownerId])
-  @@index([status])
 }
 
 model SiaMember {
@@ -149,7 +151,11 @@ model SiaMember {
   @@unique([siaId, userId])
 }
 
-enum Domain {
+// ============================================
+// ENUMS PRINCIPAUX
+// ============================================
+
+enum Sector {
   HEALTH
   FINANCE
   HR
@@ -158,6 +164,7 @@ enum Domain {
   ADMINISTRATION
   EDUCATION
   TRANSPORT
+  INSURANCE
   SECURITY
   MARKETING
   OTHER
@@ -171,141 +178,18 @@ enum SiaStatus {
 }
 
 enum DecisionType {
-  INFORMATIVE         // Affiche des informations
-  RECOMMENDATION      // Suggère des options
-  ASSISTED_DECISION   // Propose, humain décide
-  AUTO_DECISION       // Décide automatiquement
+  INFORMATIVE
+  RECOMMENDATION
+  ASSISTED_DECISION
+  AUTO_DECISION
 }
 
 enum Scale {
-  TINY        // < 100
-  SMALL       // 100 - 10K
-  MEDIUM      // 10K - 100K
-  LARGE       // 100K - 1M
-  VERY_LARGE  // > 1M
-}
-
-// ============================================
-// GRAPHE : NOEUDS ET FLUX
-// ============================================
-
-model Node {
-  id     String   @id @default(cuid())
-  siaId  String
-  sia    Sia      @relation(fields: [siaId], references: [id], onDelete: Cascade)
-
-  // Identité
-  type   NodeType
-  label  String
-
-  // Attributs spécifiques au type (JSON flexible)
-  // Pour HUMAN: { role, vulnerability, protectedChars, decisionPower }
-  // Pour AI: { modelType, opacity, autonomy, explainability }
-  // Pour INFRA: { infraType, location, retention, security }
-  // Pour ORG: { legalStatus, jurisdiction, responsibilities }
-  attributes Json   @default("{}")
-
-  // Position sur le canvas React Flow
-  positionX  Float  @default(0)
-  positionY  Float  @default(0)
-
-  // Style personnalisé
-  style      Json?  // { width, height, etc. }
-
-  // Relations
-  outgoingEdges Edge[] @relation("EdgeSource")
-  incomingEdges Edge[] @relation("EdgeTarget")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([siaId])
-}
-
-enum NodeType {
-  HUMAN   // Personne physique
-  AI      // Composant IA/ML
-  INFRA   // Infrastructure technique
-  ORG     // Entité juridique
-}
-
-model Edge {
-  id       String @id @default(cuid())
-  siaId    String
-  sia      Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
-
-  // Connexion
-  sourceId String
-  source   Node   @relation("EdgeSource", fields: [sourceId], references: [id], onDelete: Cascade)
-  targetId String
-  target   Node   @relation("EdgeTarget", fields: [targetId], references: [id], onDelete: Cascade)
-
-  // Caractéristiques du flux
-  label          String?
-  direction      FlowDirection
-  nature         FlowNature
-  dataCategories String[]        // Catégories de données
-  sensitivity    Sensitivity     @default(STANDARD)
-  automation     AutomationLevel @default(INFORMATIVE)
-  frequency      Frequency       @default(ON_DEMAND)
-  legalBasis     LegalBasis?
-
-  // Profil éthique (5 dimensions, 1-5 chacune)
-  agentivity      Int?  // Impact sur autonomie du destinataire (1=augmente, 5=supprime)
-  asymmetry       Int?  // Asymétrie informationnelle (1=symétrie, 5=asymétrie totale)
-  irreversibility Int?  // Possibilité d'annulation (1=réversible, 5=irréversible)
-  scalability     Int?  // Échelle d'impact (1=individuel, 5=systémique)
-  opacity         Int?  // Explicabilité (1=explicable, 5=opaque)
-
-  // Score de profil calculé
-  ethicalProfileScore Float?
-
-  // Niveau de vigilance calculé (1-5)
-  vigilanceLevel Int?
-
-  // Relations avec tensions
-  tensionEdges TensionEdge[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([siaId])
-  @@index([sourceId])
-  @@index([targetId])
-}
-
-enum FlowDirection {
-  H2M   // Humain vers Machine
-  M2M   // Machine vers Machine
-  M2H   // Machine vers Humain
-  H2H   // Humain vers Humain (via machine)
-}
-
-enum FlowNature {
-  COLLECT         // Collecte de données
-  INFERENCE       // Inférence/prédiction
-  ENRICHMENT      // Enrichissement
-  DECISION        // Prise de décision
-  RECOMMENDATION  // Recommandation
-  NOTIFICATION    // Notification
-  LEARNING        // Apprentissage du modèle
-  CONTROL         // Contrôle/supervision
-  TRANSFER        // Transfert simple
-  STORAGE         // Stockage
-}
-
-enum Sensitivity {
-  STANDARD
-  SENSITIVE         // Art. 9 RGPD
-  HIGHLY_SENSITIVE  // Santé, biométrie, etc.
-}
-
-enum AutomationLevel {
-  INFORMATIVE           // Information pure
-  ASSISTED              // Aide à la décision
-  SEMI_AUTO             // Décision avec validation
-  AUTO_WITH_RECOURSE    // Auto mais contestable
-  AUTO_NO_RECOURSE      // Auto sans recours
+  TINY
+  SMALL
+  MEDIUM
+  LARGE
+  VERY_LARGE
 }
 
 enum Frequency {
@@ -318,6 +202,197 @@ enum Frequency {
   ONE_TIME
 }
 
+// ============================================
+// LES 12 DOMAINES ÉTHIQUES
+// ============================================
+
+enum EthicalDomain {
+  // Cercle 1 : Les Personnes
+  PRIVACY
+  EQUITY
+  TRANSPARENCY
+  AUTONOMY
+  SECURITY
+  RECOURSE
+
+  // Cercle 2 : L'Organisation
+  MASTERY
+  RESPONSIBILITY
+  SOVEREIGNTY
+
+  // Cercle 3 : La Société
+  SUSTAINABILITY
+  LOYALTY
+  SOCIETAL_BALANCE
+}
+
+// ============================================
+// NOEUDS (Blocs du graphe)
+// ============================================
+
+model Node {
+  id     String   @id @default(cuid())
+  siaId  String
+  sia    Sia      @relation(fields: [siaId], references: [id], onDelete: Cascade)
+
+  type    NodeType
+  subtype String?
+  label   String
+
+  positionX  Float  @default(0)
+  positionY  Float  @default(0)
+
+  // Annotation des domaines
+  reinforcesDomains EthicalDomain[]
+  affectsDomains    EthicalDomain[]
+
+  attributes Json @default("{}")
+
+  outgoingEdges Edge[] @relation("EdgeSource")
+  incomingEdges Edge[] @relation("EdgeTarget")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siaId])
+}
+
+enum NodeType {
+  HUMAN
+  AI
+  INFRA
+  ORG
+}
+
+// ============================================
+// FLUX (Liens entre blocs)
+// ============================================
+
+model Edge {
+  id       String @id @default(cuid())
+  siaId    String
+  sia      Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
+
+  sourceId String
+  source   Node   @relation("EdgeSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId String
+  target   Node   @relation("EdgeTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  label    String?
+
+  direction FlowDirection
+  nature    FlowNature
+
+  intent    FlowIntent    @default(INFORMATION)
+  channel   FlowChannel   @default(API)
+
+  dataCategories DataCategory[]
+  sensitivity    Sensitivity     @default(STANDARD)
+  automation     AutomationLevel @default(INFORMATIVE)
+
+  isReversible   Boolean         @default(true)
+
+  criticality    FlowCriticality @default(IMPORTANT)
+  frequency      Frequency       @default(ON_DEMAND)
+  legalBasis     LegalBasis?
+
+  // Profil éthique (5 dimensions, 1-5 chacune) - CONSERVER pour compatibilité
+  agentivity      Int?
+  asymmetry       Int?
+  irreversibility Int?
+  scalability     Int?
+  opacity         Int?
+
+  ethicalProfileScore Float?
+  vigilanceLevel Int?
+
+  tensionEdges TensionEdge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siaId])
+  @@index([sourceId])
+  @@index([targetId])
+}
+
+enum FlowDirection {
+  H2M
+  M2M
+  M2H
+  H2H
+}
+
+enum FlowNature {
+  COLLECT
+  INFERENCE
+  ENRICHMENT
+  DECISION
+  RECOMMENDATION
+  NOTIFICATION
+  LEARNING
+  CONTROL
+  TRANSFER
+  STORAGE
+}
+
+enum FlowIntent {
+  COMMAND
+  FEEDBACK
+  SURVEILLANCE
+  INFORMATION
+  EVALUATION
+  TRAINING
+  QUERY
+}
+
+enum FlowChannel {
+  API
+  USER_INTERFACE
+  SENSOR
+  NOTIFICATION
+  BATCH_PROCESS
+  WEBHOOK
+  FILE_TRANSFER
+}
+
+enum DataCategory {
+  IDENTIFIER
+  DEMOGRAPHIC
+  LOCATION
+  FINANCIAL
+  HEALTH
+  BIOMETRIC
+  BEHAVIORAL
+  PROFESSIONAL
+  OPINION
+  JUDICIAL
+  INFERRED
+  CONTENT
+  TECHNICAL
+  OTHER
+}
+
+enum Sensitivity {
+  STANDARD
+  SENSITIVE
+  HIGHLY_SENSITIVE
+}
+
+enum AutomationLevel {
+  INFORMATIVE
+  ASSISTED
+  SEMI_AUTO
+  AUTO_WITH_RECOURSE
+  AUTO_NO_RECOURSE
+}
+
+enum FlowCriticality {
+  ACCESSORY
+  IMPORTANT
+  CRITICAL
+}
+
 enum LegalBasis {
   CONSENT
   CONTRACT
@@ -328,7 +403,7 @@ enum LegalBasis {
 }
 
 // ============================================
-// TENSIONS (DILEMMES ÉTHIQUES)
+// TENSIONS / DILEMMES ÉTHIQUES
 // ============================================
 
 model Tension {
@@ -336,53 +411,62 @@ model Tension {
   siaId  String
   sia    Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
 
-  // Identification
-  pattern     TensionPattern
-  customTitle String?         // Si pattern = OTHER
-  description String          @db.Text
-  status      TensionStatus   @default(DETECTED)
+  // Domaines en tension (NOUVEAU)
+  domainA EthicalDomain?
+  domainB EthicalDomain?
 
-  // Domaines de vigilance impactés
+  // Règle de détection (NOUVEAU)
+  ruleId     String?
+  ruleName   String?
+  ruleFamily RuleFamily?
+
+  // Description
+  formulation String? @db.Text
+  mechanism   String? @db.Text
+
+  // CONSERVER pour compatibilité avec code existant
+  pattern         TensionPattern?
+  customTitle     String?
+  description     String?          @db.Text
   impactedDomains String[]
+  triggeredByRule String?
 
-  // Qualification (1-5 chacun)
-  severity        Int?  // Gravité de l'atteinte
-  probability     Int?  // Vraisemblance
-  scale           Int?  // Nombre de personnes
-  vulnerability   Int?  // Vulnérabilité des personnes
-  irreversibility Int?  // Réparabilité
-  detectability   Int?  // Facilité de détection (1=facile, 5=difficile)
+  // Flux concernés
+  affectedNodeIds String[]
+  affectedEdgeIds String[]
+  tensionEdges    TensionEdge[]
 
-  // Niveaux d'incertitude pour chaque critère
-  uncertainties   Json?  // { severity: 'low'|'medium'|'high', ... }
+  // Qualification
+  severity            Int      @default(3)
+  probability         Int?
+  vulnerability       Int?
+  detectability       Int?
+  aggravatingFactors  String[]
+  mitigatingFactors   String[]
 
-  // Scores calculés
-  exposureScore  Float?   // E : exposition brute
-  coverageScore  Float?   // C : couverture des actions
-  residualScore  Float?   // R : exposition résiduelle
+  // Guidance
+  questionsToConsider    String[]
+  stakeholdersToConsult  String[]
+  acceptablePatterns     String[]
+  requiredEvidences      String[]
 
-  // Flux concernés (relation N:N)
-  tensionEdges TensionEdge[]
+  status TensionStatus @default(DETECTED)
 
-  // Actions liées
-  actions Action[]
+  // Maturité 0-4
+  maturity Int @default(0)
 
-  // Arbitrage
-  arbitration Arbitration?
+  // Scores calculés - CONSERVER
+  exposureScore  Float?
+  coverageScore  Float?
+  residualScore  Float?
 
-  // Collaboration
-  comments   Comment[]
+  // Relations
+  arbitrations Arbitration[]
+  actions      Action[]
 
-  // Assignation
+  // Dates et assignation - CONSERVER
   assigneeId String?
   dueDate    DateTime?
-
-  // Créateur
-  createdById String?
-  createdBy   User?   @relation("TensionCreator", fields: [createdById], references: [id])
-
-  // Règle qui a déclenché la détection
-  triggeredByRule String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -400,8 +484,8 @@ model TensionEdge {
   @@id([tensionId, edgeId])
 }
 
+// CONSERVER pour compatibilité
 enum TensionPattern {
-  // Circle 1: Personnes
   SECURITY_VS_PRIVACY
   PERSONALIZATION_VS_AUTONOMY
   EFFICIENCY_VS_TRANSPARENCY
@@ -419,26 +503,33 @@ enum TensionPattern {
   WELLBEING_VS_AUTONOMY
   COLLECTIVE_VS_INDIVIDUAL
   EFFICIENCY_VS_PROTECTION
-  // Circle 2: Organisation
   CONTROL_VS_INNOVATION
   SOVEREIGNTY_VS_PERFORMANCE
   RESPONSIBILITY_VS_AGILITY
-  // Circle 3: Société
   PERFORMANCE_VS_SUSTAINABILITY
   LOYALTY_VS_PROFIT
   BALANCE_VS_EFFICIENCY
   SUSTAINABILITY_VS_ACCESSIBILITY
-  // Autre
   OTHER
 }
 
 enum TensionStatus {
-  DETECTED      // Détectée, non qualifiée
-  QUALIFIED     // Critères renseignés
-  IN_PROGRESS   // Actions en cours
-  ARBITRATED    // Arbitrage documenté
-  RESOLVED      // Résolue
-  DISMISSED     // Écartée (non pertinente)
+  DETECTED
+  QUALIFIED
+  VALIDATED
+  CONTESTED
+  ARBITRATED
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+enum RuleFamily {
+  STRUCTURAL
+  DATA
+  DEPENDENCY
+  CONTEXTUAL
+  GOVERNANCE
 }
 
 // ============================================
@@ -447,29 +538,84 @@ enum TensionStatus {
 
 model Arbitration {
   id        String  @id @default(cuid())
-  tensionId String  @unique
+  tensionId String
   tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
 
-  // Décision
-  decision          String @db.Text  // Quel droit priorisé et pourquoi
-  justification     String @db.Text  // Raisonnement détaillé
-  proportionality   String? @db.Text // Nécessité, adéquation, proportionnalité
-  contestability    String? @db.Text // Comment contester
-  revisionConditions String? @db.Text // Quand réviser
+  prioritizedDomain EthicalDomain?
 
-  // Mesures compensatoires
+  justificationCategory JustificationCategory?
+  justificationText     String? @db.Text
+
+  mitigationActions String[]
+
+  revisionTriggers  RevisionTrigger[]
+  revisionDate      DateTime?
+  revisionCondition String?
+
+  maturityLevel ArbitrationMaturity @default(RECOGNIZED)
+
+  hasDisagreement        Boolean              @default(false)
+  divergentPositions     DivergentPosition[]
+  finalDecisionAuthority String?
+
+  arbitratedById String?
+  arbitratedBy   User?    @relation(fields: [arbitratedById], references: [id])
+  arbitratedAt   DateTime @default(now())
+
+  // CONSERVER pour compatibilité
+  decision          String? @db.Text
+  justification     String? @db.Text
+  proportionality   String? @db.Text
+  contestability    String? @db.Text
+  revisionConditions String? @db.Text
   compensatoryMeasures String? @db.Text
 
-  // Créateur
-  createdBy      String?
-
-  // Validation
-  validatedById  String?
-  validatedAt    DateTime?
-  nextReviewDate DateTime?
+  evidences Evidence[]
+  actions   Action[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum ArbitrationMaturity {
+  NOT_TREATED
+  RECOGNIZED
+  DECIDED
+  TESTED
+  MONITORED
+}
+
+enum JustificationCategory {
+  REGULATORY_CONSTRAINT
+  USER_EXPECTATIONS
+  ECONOMIC_CONSTRAINT
+  TECHNICAL_CONSTRAINT
+  STRATEGIC_CHOICE
+  OTHER
+}
+
+enum RevisionTrigger {
+  DATA_SOURCE_CHANGE
+  MODEL_CHANGE
+  PROVIDER_CHANGE
+  NEW_USER_GROUP
+  NEW_GEOGRAPHIC_SCOPE
+  INCIDENT
+  REGULATORY_CHANGE
+  SCHEDULED_REVIEW
+  DRIFT_DETECTED
+}
+
+model DivergentPosition {
+  id            String @id @default(cuid())
+  arbitrationId String
+  arbitration   Arbitration @relation(fields: [arbitrationId], references: [id], onDelete: Cascade)
+
+  stakeholder String
+  role        String
+  position    String  @db.Text
+
+  createdAt DateTime @default(now())
 }
 
 // ============================================
@@ -481,43 +627,37 @@ model Action {
   siaId String
   sia   Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
 
-  // Lien optionnel avec une tension
-  tensionId String?
-  tension   Tension? @relation(fields: [tensionId], references: [id], onDelete: SetNull)
+  tensionId     String?
+  tension       Tension?     @relation(fields: [tensionId], references: [id], onDelete: SetNull)
+  arbitrationId String?
+  arbitration   Arbitration? @relation(fields: [arbitrationId], references: [id], onDelete: SetNull)
 
-  // Contenu
   title       String
   description String?  @db.Text
-  category    ActionCategory
 
-  // Priorisation
+  actionType ActionType?
+  category   ActionCategory
+
+  targetDomain   EthicalDomain?
+  expectedImpact Int?
+
   priority Priority @default(MEDIUM)
   effort   Effort   @default(MEDIUM)
   status   ActionStatus @default(TODO)
 
-  // Impact estimé sur les domaines (JSON)
-  // { "privacy": -2, "transparency": -1 } = réduit de 2 niveaux vie privée
+  // CONSERVER pour compatibilité
   estimatedImpact Json?
+  checklist       Json?
+  templateId      String?
+  sourceRule      String?
 
-  // Checklist interne (JSON array)
-  checklist Json?  // [{ text: "...", completed: boolean }]
-
-  // Template source
-  templateId String?
-
-  // Dates
   dueDate     DateTime?
   completedAt DateTime?
 
-  // Assignation
   assigneeId String?
-  assignee   User?   @relation("ActionAssignee", fields: [assigneeId], references: [id])
+  assignee   User?   @relation(fields: [assigneeId], references: [id])
 
-  // Preuves
   evidences Evidence[]
-
-  // Source de la recommandation
-  sourceRule String?  // Règle qui a suggéré cette action
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -527,15 +667,23 @@ model Action {
   @@index([status])
 }
 
+enum ActionType {
+  MITIGATION
+  COMPENSATION
+  SURVEILLANCE
+}
+
 enum ActionCategory {
-  MINIMIZATION    // Minimisation des données
-  TRANSPARENCY    // Transparence et information
-  HUMAN_CONTROL   // Contrôle humain
-  RECOURSE        // Recours et contestation
-  TECHNICAL       // Mesures techniques
-  ORGANIZATIONAL  // Mesures organisationnelles
-  DESIGN          // Privacy/Fairness by design
-  AUDIT           // Audit et vérification
+  MINIMIZATION
+  TRANSPARENCY
+  HUMAN_CONTROL
+  RECOURSE
+  TECHNICAL
+  ORGANIZATIONAL
+  DESIGN
+  CONTRACTUAL
+  DOCUMENTATION
+  AUDIT
 }
 
 enum Priority {
@@ -546,11 +694,11 @@ enum Priority {
 }
 
 enum Effort {
-  TRIVIAL   // < 1 jour
-  SMALL     // 1-3 jours
-  MEDIUM    // 1-2 semaines
-  LARGE     // 2-4 semaines
-  HUGE      // > 1 mois
+  TRIVIAL
+  SMALL
+  MEDIUM
+  LARGE
+  HUGE
 }
 
 enum ActionStatus {
@@ -567,62 +715,32 @@ enum ActionStatus {
 
 model Evidence {
   id       String @id @default(cuid())
-  actionId String
-  action   Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  actionId      String?
+  action        Action?      @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  arbitrationId String?
+  arbitration   Arbitration? @relation(fields: [arbitrationId], references: [id], onDelete: Cascade)
 
   type     EvidenceType
   title    String
   description String?
-  url      String?       // Lien externe (Jira, Confluence, etc.)
-  fileKey  String?       // Clé fichier uploadé
+  url      String?
+  fileKey  String?
   fileName String?
-  fileSize Int?
-  mimeType String?
 
-  createdAt DateTime @default(now())
-
-  @@index([actionId])
+  uploadedAt DateTime @default(now())
 }
 
 enum EvidenceType {
-  DOCUMENT      // PDF, DOCX
-  LINK          // URL externe
-  SCREENSHOT    // Image
-  TICKET        // Jira, GitLab issue
-  TEST_REPORT   // Rapport de test
-  CERTIFICATE   // Certificat/attestation
-  CODE          // Extrait de code
+  DOCUMENT
+  SCREENSHOT
+  LINK
+  CODE
+  TEST_RESULT
+  AUDIT_REPORT
+  METRIC_DASHBOARD
+  PROCEDURE
   OTHER
-}
-
-// ============================================
-// COLLABORATION
-// ============================================
-
-model Comment {
-  id        String  @id @default(cuid())
-
-  // Attaché à une tension
-  tensionId String
-  tension   Tension @relation(fields: [tensionId], references: [id], onDelete: Cascade)
-
-  // Auteur
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
-
-  content  String   @db.Text
-  resolved Boolean  @default(false)
-
-  // Réponse à un autre commentaire
-  parentId String?
-  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies  Comment[] @relation("CommentReplies")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([tensionId])
-  @@index([authorId])
 }
 
 // ============================================
@@ -630,29 +748,25 @@ model Comment {
 // ============================================
 
 model Version {
-  id    String @id @default(cuid())
-  siaId String
-  sia   Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
+  id        String @id @default(cuid())
+  siaId     String
+  sia       Sia    @relation(fields: [siaId], references: [id], onDelete: Cascade)
 
-  number      Int
-  label       String?      // v1.0, v2.0-beta, etc.
-  changelog   String?  @db.Text
+  number    Int
+  label     String?
+  snapshot  Json
+  changelog String?  @db.Text
 
-  // Snapshot complet de l'état (JSON)
-  snapshot Json
-
-  // Scores au moment du snapshot
-  vigilanceScores Json?  // { privacy: 3, equity: 4, ... }
+  // CONSERVER pour compatibilité
+  vigilanceScores Json?
   globalScore     Float?
-
-  // Statistiques
   tensionCount    Int?
   resolvedCount   Int?
   actionCount     Int?
   completedCount  Int?
+  createdById     String?
 
-  createdById String
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([siaId, number])
   @@index([siaId])

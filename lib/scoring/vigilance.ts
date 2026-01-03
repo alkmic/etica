@@ -5,11 +5,11 @@ import { DomainId, DOMAIN_IDS } from '@/lib/constants/domains'
 
 // Types pour les données d'entrée
 export interface SiaData {
-  id: string
+  id?: string
   decisionType: string
   hasVulnerable: boolean
-  scale: string
-  domain: string
+  userScale: string
+  sector?: string
 }
 
 export interface EdgeData {
@@ -133,7 +133,7 @@ function calculateDomainExposure(
   // 1. Exposition intrinsèque basée sur les caractéristiques du SIA
   const decisionImpact = (DECISION_TYPE_WEIGHTS[sia.decisionType] || 0.3) * getDomainDecisionWeight(domainId)
   const vulnerabilityFactor = sia.hasVulnerable ? 0.3 : 0
-  const scaleFactor = (SCALE_WEIGHTS[sia.scale] || 0.3) * 0.1
+  const scaleFactor = (SCALE_WEIGHTS[sia.userScale] || 0.3) * 0.1
 
   exposure += decisionImpact * 0.35 + vulnerabilityFactor + scaleFactor
 

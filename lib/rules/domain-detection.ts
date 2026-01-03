@@ -7,9 +7,9 @@ import { DomainId, DOMAINS } from '@/lib/constants/domains'
 // Context types
 export interface DomainDetectionContext {
   sia: {
-    domain: string
+    sector: string
     decisionType: string
-    scale: string
+    userScale: string
     hasVulnerable: boolean
     dataTypes: string[]
   }
@@ -159,13 +159,13 @@ export function detectEthicalDomains(context: DomainDetectionContext): DetectedD
   }
 
   // Check for high-risk domains
-  if (HIGH_EQUITY_DOMAINS.includes(sia.domain)) {
-    equityReasons.push(`Domaine à haut risque de discrimination (${sia.domain})`)
+  if (HIGH_EQUITY_DOMAINS.includes(sia.sector)) {
+    equityReasons.push(`Domaine à haut risque de discrimination (${sia.sector})`)
     equityConfidence = 'HIGH'
   }
 
   // Large scale increases equity concerns
-  if (sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE') {
+  if (sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE') {
     equityReasons.push('Grande échelle (risque de discrimination systémique)')
     equityConfidence = equityConfidence === 'HIGH' ? 'HIGH' : 'MEDIUM'
   }
@@ -291,8 +291,8 @@ export function detectEthicalDomains(context: DomainDetectionContext): DetectedD
   }
 
   // High-risk domains
-  if (HIGH_SECURITY_DOMAINS.includes(sia.domain)) {
-    securityReasons.push(`Domaine critique (${sia.domain})`)
+  if (HIGH_SECURITY_DOMAINS.includes(sia.sector)) {
+    securityReasons.push(`Domaine critique (${sia.sector})`)
     securityConfidence = 'HIGH'
   }
 
@@ -303,7 +303,7 @@ export function detectEthicalDomains(context: DomainDetectionContext): DetectedD
   }
 
   // Large scale
-  if (sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE') {
+  if (sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE') {
     securityReasons.push('Grande échelle (surface d\'attaque étendue)')
     securityConfidence = securityConfidence === 'HIGH' ? 'HIGH' : 'MEDIUM'
   }
@@ -338,8 +338,8 @@ export function detectEthicalDomains(context: DomainDetectionContext): DetectedD
   }
 
   // High-risk domains
-  if (HIGH_RECOURSE_DOMAINS.includes(sia.domain)) {
-    recourseReasons.push(`Domaine à fort enjeu (${sia.domain})`)
+  if (HIGH_RECOURSE_DOMAINS.includes(sia.sector)) {
+    recourseReasons.push(`Domaine à fort enjeu (${sia.sector})`)
     recourseConfidence = 'HIGH'
   }
 
@@ -373,7 +373,7 @@ export function detectEthicalDomains(context: DomainDetectionContext): DetectedD
   }
 
   // Large scale = more impact
-  if (sia.scale === 'LARGE' || sia.scale === 'VERY_LARGE') {
+  if (sia.userScale === 'LARGE' || sia.userScale === 'VERY_LARGE') {
     sustainabilityReasons.push('Grande échelle d\'utilisation')
     sustainabilityConfidence = 'MEDIUM'
   }

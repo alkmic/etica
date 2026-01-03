@@ -25,7 +25,7 @@ import { SIA_DOMAINS, SIA_STATUSES } from '@/lib/constants'
 interface Sia {
   id: string
   name: string
-  domain: string
+  sector: string
   status: string
   description: string
   vigilanceScores: {
@@ -41,7 +41,7 @@ interface Sia {
 }
 
 function SiaCard({ sia }: { sia: Sia }) {
-  const domain = SIA_DOMAINS[sia.domain as keyof typeof SIA_DOMAINS]
+  const sector = SIA_DOMAINS[sia.sector as keyof typeof SIA_DOMAINS]
   const status = SIA_STATUSES[sia.status as keyof typeof SIA_STATUSES]
 
   const vigilanceLevel = sia.vigilanceScores?.global
@@ -80,7 +80,7 @@ function SiaCard({ sia }: { sia: Sia }) {
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">
-                  {domain?.label || sia.domain}
+                  {sector?.label || sia.sector}
                 </Badge>
                 <Badge
                   variant="outline"
