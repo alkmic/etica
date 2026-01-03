@@ -44,8 +44,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Redirect to login if not authenticated
+  // Handle unauthenticated requests
   if (!token) {
+    // For API routes, return 401 JSON response instead of redirect
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Non autorisé' },
+        { status: 401 }
+      )
+    }
+
+    // For page routes, redirect to login
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)

@@ -153,13 +153,16 @@ export default function DashboardPage() {
       try {
         const response = await fetch('/api/sia')
         if (!response.ok) {
-          throw new Error('Erreur lors du chargement')
+          const errorData = await response.json().catch(() => ({}))
+          console.error('API Error:', response.status, errorData)
+          throw new Error(errorData.details || errorData.error || `Erreur ${response.status}`)
         }
         const data = await response.json()
         setSias(data)
       } catch (err) {
-        setError('Impossible de charger les systèmes')
-        console.error(err)
+        const message = err instanceof Error ? err.message : 'Erreur inconnue'
+        setError(`Impossible de charger les systèmes: ${message}`)
+        console.error('Fetch error:', err)
       } finally {
         setLoading(false)
       }

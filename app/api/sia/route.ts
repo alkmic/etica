@@ -23,8 +23,9 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
+      console.error('GET /api/sia - No session or user id found:', { session })
       return NextResponse.json(
-        { error: 'Non autorisé' },
+        { error: 'Non autorisé', details: 'Session utilisateur non trouvée' },
         { status: 401 }
       )
     }
@@ -72,8 +73,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(siasWithScores)
   } catch (error) {
     console.error('Error fetching SIAs:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Erreur lors de la récupération des SIA' },
+      { error: 'Erreur lors de la récupération des SIA', details: errorMessage },
       { status: 500 }
     )
   }
