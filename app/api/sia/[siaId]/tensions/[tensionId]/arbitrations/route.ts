@@ -78,7 +78,7 @@ export async function POST(
           tensionId,
           decision: validatedData.decision,
           justification: validatedData.justification,
-          createdBy: session.user!.id,
+          arbitratedById: session.user!.id,
         },
       })
 
