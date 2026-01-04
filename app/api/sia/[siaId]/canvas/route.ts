@@ -37,6 +37,13 @@ const nodeSchema = z.object({
   positionY: z.number(),
 })
 
+// Valid DataCategory enum values from Prisma schema
+const validDataCategories = [
+  'IDENTIFIER', 'DEMOGRAPHIC', 'LOCATION', 'FINANCIAL', 'HEALTH',
+  'BIOMETRIC', 'BEHAVIORAL', 'PROFESSIONAL', 'OPINION', 'JUDICIAL',
+  'INFERRED', 'CONTENT', 'TECHNICAL', 'OTHER'
+] as const
+
 const edgeSchema = z.object({
   id: z.string(),
   sourceId: z.string(),
@@ -60,6 +67,12 @@ const edgeSchema = z.object({
   scalability: z.number().min(1).max(5).optional().nullable(),
   opacity: z.number().min(1).max(5).optional().nullable(),
 })
+
+// Helper to filter valid data categories
+function filterValidDataCategories(categories: string[] | undefined): string[] {
+  if (!categories) return []
+  return categories.filter(cat => validDataCategories.includes(cat as typeof validDataCategories[number]))
+}
 
 const canvasSchema = z.object({
   nodes: z.array(nodeSchema),
@@ -161,7 +174,8 @@ export async function PUT(
             label: edge.label || '',
             direction: edge.direction,
             nature: edge.nature,
-            dataCategories: edge.dataCategories || [],
+            // Filter data categories to only include valid enum values
+            dataCategories: filterValidDataCategories(edge.dataCategories) as typeof validDataCategories[number][],
             // Methodology-critical fields
             automation: edge.automation,
             sensitivity: edge.sensitivity,
@@ -288,8 +302,9 @@ export async function PUT(
     }
 
     console.error('Error updating canvas:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Erreur lors de la sauvegarde' },
+      { error: 'Erreur lors de la sauvegarde', details: errorMessage },
       { status: 500 }
     )
   }
