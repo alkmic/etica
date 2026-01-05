@@ -593,16 +593,25 @@ export default function SiaDashboardPage() {
         </Card>
       </div>
 
-      {/* Tabs for Tensions and Actions */}
+      {/* Tabs for Tensions, Suivi, Profil, Calendrier */}
       <Tabs defaultValue="tensions" className="w-full">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tensions" className="gap-2">
             <AlertTriangle className="h-4 w-4" />
-            Tensions ({sia.tensions.length})
+            <span className="hidden sm:inline">Tensions</span>
+            <Badge variant="secondary" className="ml-1">{sia.tensions.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="actions" className="gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            Actions ({sia.actions.length})
+          <TabsTrigger value="suivi" className="gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Suivi</span>
+          </TabsTrigger>
+          <TabsTrigger value="profil" className="gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Profil</span>
+          </TabsTrigger>
+          <TabsTrigger value="calendrier" className="gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Calendrier</span>
           </TabsTrigger>
         </TabsList>
 
@@ -687,67 +696,417 @@ export default function SiaDashboardPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="actions" className="mt-4">
-          {sia.actions.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center">
-                  <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Aucune action planifiée</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Les actions sont créées pour résoudre les tensions détectées.
-                  </p>
-                  <Button asChild>
-                    <Link href={`/${siaId}/actions`}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Créer une action
-                    </Link>
-                  </Button>
+        {/* Vue 1: Suivi - Tracking by dilemma with action progress */}
+        <TabsContent value="suivi" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Tableau de suivi
+              </CardTitle>
+              <CardDescription>
+                Suivi par dilemme avec état d&apos;avancement des actions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {sia.tensions.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Aucune tension à suivre pour le moment.</p>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {sia.actions.slice(0, 5).map((action) => (
-                <Card key={action.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {action.status === 'DONE' ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        ) : action.status === 'IN_PROGRESS' ? (
-                          <Clock className="h-5 w-5 text-blue-500" />
-                        ) : (
-                          <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
-                        )}
-                        <div>
-                          <h4 className="font-medium">{action.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Priorité: {priorityLabels[action.priority]}
-                          </p>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/${siaId}/actions`}>
-                          Voir
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                      </Button>
+              ) : (
+                <div className="space-y-4">
+                  {sia.tensions.map((tension) => {
+                    const tensionActions = sia.actions.filter(a =>
+                      tension.description?.toLowerCase().includes(a.title?.toLowerCase()) ||
+                      tension.impactedDomains?.some(d => a.title?.toLowerCase().includes(d.toLowerCase()))
+                    )
+                    const completedTensionActions = tensionActions.filter(a => a.status === 'DONE').length
+                    const progress = tensionActions.length > 0
+                      ? Math.round((completedTensionActions / tensionActions.length) * 100)
+                      : 0
+                    const severityLevel = getSeverityLevel(tension.severity || 3)
+
+                    return (
+                      <Card key={tension.id} className="border-l-4" style={{
+                        borderLeftColor: tension.status === 'RESOLVED' || tension.status === 'ARBITRATED'
+                          ? '#22c55e'
+                          : tension.status === 'DISMISSED'
+                            ? '#6b7280'
+                            : severityLevel >= 4 ? '#ef4444' : '#f59e0b'
+                      }}>
+                        <CardContent className="py-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 className="font-medium">{tension.description}</h4>
+                                <Badge className={severityColors[severityLevel]}>
+                                  {severityLabels[severityLevel]}
+                                </Badge>
+                                <Badge variant={
+                                  tension.status === 'RESOLVED' || tension.status === 'ARBITRATED' ? 'default' :
+                                  tension.status === 'DISMISSED' ? 'secondary' :
+                                  'outline'
+                                }>
+                                  {tension.status === 'DETECTED' && 'Détecté'}
+                                  {tension.status === 'QUALIFIED' && 'Qualifié'}
+                                  {tension.status === 'IN_PROGRESS' && 'En cours'}
+                                  {tension.status === 'ARBITRATED' && 'Arbitré'}
+                                  {tension.status === 'RESOLVED' && 'Résolu'}
+                                  {tension.status === 'DISMISSED' && 'Rejeté'}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                                {tension.impactedDomains?.map((domain, idx) => (
+                                  <span key={domain} className="flex items-center gap-1">
+                                    {idx > 0 && <span>•</span>}
+                                    {domainIcons[domain]}
+                                    {DOMAINS[domain as keyof typeof DOMAINS]?.label}
+                                  </span>
+                                ))}
+                              </div>
+                              {tension.arbitration && (
+                                <div className="bg-muted/50 rounded-lg p-3 mb-3">
+                                  <p className="text-sm">
+                                    <span className="font-medium">Décision: </span>
+                                    {tension.arbitration.decision === 'ACCEPT' && 'Accepter le risque'}
+                                    {tension.arbitration.decision === 'MITIGATE' && 'Atténuer'}
+                                    {tension.arbitration.decision === 'REJECT' && 'Rejeter'}
+                                  </p>
+                                  {tension.arbitration.justification && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      {tension.arbitration.justification}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={`/${siaId}/tensions/${tension.id}`}>
+                                Détails
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </div>
+                          {tensionActions.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  Actions liées: {completedTensionActions}/{tensionActions.length}
+                                </span>
+                                <span className="font-medium">{progress}%</span>
+                              </div>
+                              <Progress value={progress} className="h-2" />
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Vue 2: Profil éthique - Prioritized domains */}
+        <TabsContent value="profil" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Profil éthique
+              </CardTitle>
+              <CardDescription>
+                Visualisation des domaines priorisés dans vos arbitrages
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-3 mb-6">
+                {/* Circle 1: Personnes */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="h-4 w-4" style={{ color: '#3B82F6' }} />
+                      Cercle 1: Personnes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {['PRIVACY', 'EQUITY', 'TRANSPARENCY', 'AUTONOMY', 'SECURITY', 'RECOURSE'].map(key => {
+                        const domain = DOMAINS[key as keyof typeof DOMAINS]
+                        const score = sia.vigilanceScores?.domains?.[key] || 0
+                        const tensionCount = sia.tensions.filter(t => t.impactedDomains?.includes(key)).length
+                        return (
+                          <div key={key} className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded flex items-center justify-center" style={{ backgroundColor: `${domain.color}20` }}>
+                              <span style={{ color: domain.color }}>{domainIcons[key]}</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between text-xs mb-1">
+                                <span>{domain.label}</span>
+                                <span className="text-muted-foreground">{score.toFixed(1)}/5</span>
+                              </div>
+                              <div className="h-1 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${(score/5)*100}%`, backgroundColor: domain.color }} />
+                              </div>
+                            </div>
+                            {tensionCount > 0 && (
+                              <Badge variant="secondary" className="text-xs">{tensionCount}</Badge>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-              {sia.actions.length > 5 && (
-                <div className="text-center pt-2">
-                  <Button variant="outline" asChild>
-                    <Link href={`/${siaId}/actions`}>
-                      Voir toutes les actions ({sia.actions.length})
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+
+                {/* Circle 2: Organisation */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Map className="h-4 w-4" style={{ color: '#8B5CF6' }} />
+                      Cercle 2: Organisation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {['MASTERY', 'RESPONSIBILITY', 'SOVEREIGNTY'].map(key => {
+                        const domain = DOMAINS[key as keyof typeof DOMAINS]
+                        const score = sia.vigilanceScores?.domains?.[key] || 0
+                        const tensionCount = sia.tensions.filter(t => t.impactedDomains?.includes(key)).length
+                        return (
+                          <div key={key} className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded flex items-center justify-center" style={{ backgroundColor: `${domain.color}20` }}>
+                              <span style={{ color: domain.color }}>{domainIcons[key]}</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between text-xs mb-1">
+                                <span>{domain.label}</span>
+                                <span className="text-muted-foreground">{score.toFixed(1)}/5</span>
+                              </div>
+                              <div className="h-1 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${(score/5)*100}%`, backgroundColor: domain.color }} />
+                              </div>
+                            </div>
+                            {tensionCount > 0 && (
+                              <Badge variant="secondary" className="text-xs">{tensionCount}</Badge>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Circle 3: Société */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Leaf className="h-4 w-4" style={{ color: '#22C55E' }} />
+                      Cercle 3: Société
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {['SUSTAINABILITY', 'LOYALTY', 'SOCIETAL_BALANCE'].map(key => {
+                        const domain = DOMAINS[key as keyof typeof DOMAINS]
+                        const score = sia.vigilanceScores?.domains?.[key] || 0
+                        const tensionCount = sia.tensions.filter(t => t.impactedDomains?.includes(key)).length
+                        return (
+                          <div key={key} className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded flex items-center justify-center" style={{ backgroundColor: `${domain.color}20` }}>
+                              <span style={{ color: domain.color }}>{domainIcons[key]}</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between text-xs mb-1">
+                                <span>{domain.label}</span>
+                                <span className="text-muted-foreground">{score.toFixed(1)}/5</span>
+                              </div>
+                              <div className="h-1 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${(score/5)*100}%`, backgroundColor: domain.color }} />
+                              </div>
+                            </div>
+                            {tensionCount > 0 && (
+                              <Badge variant="secondary" className="text-xs">{tensionCount}</Badge>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Arbitration Summary */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Résumé des arbitrages</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <p className="text-2xl font-bold text-green-700">
+                        {sia.tensions.filter(t => t.arbitration?.decision === 'ACCEPT').length}
+                      </p>
+                      <p className="text-sm text-green-600">Risques acceptés</p>
+                    </div>
+                    <div className="p-4 bg-orange-50 rounded-lg">
+                      <p className="text-2xl font-bold text-orange-700">
+                        {sia.tensions.filter(t => t.arbitration?.decision === 'MITIGATE').length}
+                      </p>
+                      <p className="text-sm text-orange-600">À atténuer</p>
+                    </div>
+                    <div className="p-4 bg-red-50 rounded-lg">
+                      <p className="text-2xl font-bold text-red-700">
+                        {sia.tensions.filter(t => t.arbitration?.decision === 'REJECT').length}
+                      </p>
+                      <p className="text-sm text-red-600">Rejetés</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Vue 3: Calendrier - Revisions and triggers */}
+        <TabsContent value="calendrier" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Calendrier de révision
+              </CardTitle>
+              <CardDescription>
+                Révisions programmées et événements déclencheurs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Upcoming Reviews */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Prochaines révisions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                        <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <Clock className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Révision trimestrielle</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                        <Badge variant="outline">À venir</Badge>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                          <Clock className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Révision annuelle</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                        <Badge variant="outline">Planifié</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Trigger Events */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Événements déclencheurs</CardTitle>
+                    <CardDescription>Situations nécessitant une révision</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 p-2 rounded border">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="text-sm">Changement majeur de modèle IA</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded border">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="text-sm">Nouvelle réglementation applicable</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded border">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="text-sm">Extension de la population cible</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded border">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="text-sm">Incident signalé par les utilisateurs</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded border">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="text-sm">Changement de fournisseur externe</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Activity */}
+              <Card className="mt-6">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Activité récente</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-2 rounded-full bg-green-500" />
+                      <span className="text-sm flex-1">SIA créé</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(sia.createdAt).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                    {sia.tensions.length > 0 && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-amber-500" />
+                        <span className="text-sm flex-1">{sia.tensions.length} tension(s) détectée(s)</span>
+                        <span className="text-xs text-muted-foreground">Cartographie</span>
+                      </div>
+                    )}
+                    {arbitratedTensions > 0 && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-blue-500" />
+                        <span className="text-sm flex-1">{arbitratedTensions} tension(s) arbitrée(s)</span>
+                        <span className="text-xs text-muted-foreground">Arbitrage</span>
+                      </div>
+                    )}
+                    {completedActions > 0 && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                        <span className="text-sm flex-1">{completedActions} action(s) complétée(s)</span>
+                        <span className="text-xs text-muted-foreground">Suivi</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      <span className="text-sm flex-1">Dernière modification</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(sia.updatedAt).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
