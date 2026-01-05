@@ -365,7 +365,7 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
     title: 'Maîtrise vs Innovation',
     shortTitle: 'Maîtrise / Innovation',
     description: 'Le besoin de contrôler et comprendre le système peut freiner l\'adoption de nouvelles technologies plus performantes.',
-    domains: ['CONTROL', 'TRANSPARENCY'],
+    domains: ['MASTERY', 'TRANSPARENCY'],
     examples: [
       'Refus de modèles boîte noire plus performants',
       'Retard dans l\'adoption de l\'IA générative',
@@ -385,7 +385,7 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
     title: 'Souveraineté vs Performance',
     shortTitle: 'Souveraineté / Performance',
     description: 'Les solutions souveraines (locales, open source) peuvent être moins performantes que les géants technologiques.',
-    domains: ['SOVEREIGNTY', 'CONTROL'],
+    domains: ['SOVEREIGNTY', 'MASTERY'],
     examples: [
       'Choix entre GPT-4 et modèle européen moins performant',
       'Hébergement local vs cloud hyperscaler',
@@ -405,7 +405,7 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
     title: 'Responsabilité vs Agilité',
     shortTitle: 'Responsabilité / Agilité',
     description: 'L\'établissement de responsabilités claires peut ralentir les itérations et les déploiements rapides.',
-    domains: ['RESPONSIBILITY', 'CONTROL'],
+    domains: ['RESPONSIBILITY', 'MASTERY'],
     examples: [
       'Validation par comité avant chaque mise à jour',
       'Documentation obligatoire retardant le time-to-market',
@@ -470,7 +470,7 @@ export const TENSION_PATTERNS: Record<string, TensionPattern> = {
     title: 'Équilibre sociétal vs Efficience',
     shortTitle: 'Équilibre / Efficience',
     description: 'L\'optimisation algorithmique peut créer des effets systémiques négatifs (concentration, inégalités).',
-    domains: ['BALANCE', 'EQUITY'],
+    domains: ['SOCIETAL_BALANCE', 'EQUITY'],
     examples: [
       'Algorithmes de recommandation créant des monopoles de l\'attention',
       'Optimisation des prix créant des déserts de services',

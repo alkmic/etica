@@ -85,6 +85,8 @@ const createActionSchema = z.object({
       'TECHNICAL',
       'ORGANIZATIONAL',
       'DESIGN',
+      'CONTRACTUAL',
+      'DOCUMENTATION',
       'AUDIT',
     ])
     .default('TECHNICAL'),

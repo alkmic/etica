@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import {
   Plus,
@@ -13,14 +13,33 @@ import {
   CheckCircle,
   Clock,
   Loader2,
+  Activity,
+  Target,
+  Shield,
+  Users,
+  Building2,
+  Globe,
 } from 'lucide-react'
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { getVigilanceLabel } from '@/lib/utils'
 import { SIA_DOMAINS, SIA_STATUSES } from '@/lib/constants'
+import { DOMAINS, CIRCLE_NAMES, CIRCLE_COLORS } from '@/lib/constants/domains'
 
 interface Sia {
   id: string
@@ -28,6 +47,7 @@ interface Sia {
   sector: string
   status: string
   description: string
+  updatedAt: string
   vigilanceScores: {
     global: number
     domains: Record<string, number>
@@ -35,9 +55,66 @@ interface Sia {
   _count: {
     tensions: number
     actions: number
+    nodes: number
+    edges: number
   }
-  tensions: Array<{ status: string }>
-  actions: Array<{ status: string }>
+  tensions: Array<{ status: string; severity?: number; impactedDomains?: string[] }>
+  actions: Array<{ status: string; priority?: string }>
+}
+
+// Circle indicator component
+function CircleIndicator({
+  circle,
+  score,
+  tensionCount,
+}: {
+  circle: 1 | 2 | 3
+  score: number
+  tensionCount: number
+}) {
+  const circleIcons = {
+    1: <Users className="h-5 w-5" />,
+    2: <Building2 className="h-5 w-5" />,
+    3: <Globe className="h-5 w-5" />,
+  }
+
+  const circleDescriptions = {
+    1: 'Droits des personnes',
+    2: 'Maîtrise organisationnelle',
+    3: 'Impact sociétal',
+  }
+
+  return (
+    <div
+      className="flex items-center gap-3 p-3 rounded-lg border"
+      style={{ borderColor: `${CIRCLE_COLORS[circle]}40` }}
+    >
+      <div
+        className="flex items-center justify-center h-10 w-10 rounded-full"
+        style={{ backgroundColor: `${CIRCLE_COLORS[circle]}20`, color: CIRCLE_COLORS[circle] }}
+      >
+        {circleIcons[circle]}
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center justify-between">
+          <span className="font-medium">{CIRCLE_NAMES[circle]}</span>
+          <Badge variant={tensionCount > 0 ? 'secondary' : 'outline'}>
+            {tensionCount} tension{tensionCount !== 1 ? 's' : ''}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground">{circleDescriptions[circle]}</p>
+        <div className="mt-1 h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${(score / 5) * 100}%`,
+              backgroundColor: CIRCLE_COLORS[circle],
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function SiaCard({ sia }: { sia: Sia }) {
@@ -147,6 +224,8 @@ export default function DashboardPage() {
   const [sias, setSias] = useState<Sia[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
     async function fetchSias() {
@@ -171,20 +250,133 @@ export default function DashboardPage() {
     fetchSias()
   }, [])
 
-  // Calculate stats
-  const totalTensions = sias.reduce((acc, sia) => acc + (sia._count?.tensions || sia.tensions?.length || 0), 0)
-  const openTensions = sias.reduce((acc, sia) => {
-    const open = sia.tensions?.filter(t =>
-      t.status === 'DETECTED' || t.status === 'QUALIFIED' || t.status === 'IN_PROGRESS'
-    ).length || 0
-    return acc + open
-  }, 0)
-  const totalActions = sias.reduce((acc, sia) => acc + (sia._count?.actions || sia.actions?.length || 0), 0)
-  const completedActions = sias.reduce((acc, sia) => {
-    const completed = sia.actions?.filter(a => a.status === 'DONE').length || 0
-    return acc + completed
-  }, 0)
-  const pendingActions = totalActions - completedActions
+  // Filter SIAs based on search
+  const filteredSias = useMemo(() => {
+    if (!searchQuery) return sias
+    const query = searchQuery.toLowerCase()
+    return sias.filter(
+      sia =>
+        sia.name.toLowerCase().includes(query) ||
+        sia.description?.toLowerCase().includes(query) ||
+        sia.sector.toLowerCase().includes(query)
+    )
+  }, [sias, searchQuery])
+
+  // Calculate aggregate statistics
+  const stats = useMemo(() => {
+    const openTensions = sias.reduce((acc, sia) => {
+      const open = sia.tensions?.filter(t =>
+        t.status === 'DETECTED' || t.status === 'QUALIFIED' || t.status === 'IN_PROGRESS'
+      ).length || 0
+      return acc + open
+    }, 0)
+    const criticalTensions = sias.reduce((acc, sia) => {
+      const critical = sia.tensions?.filter(t =>
+        (t.severity || 3) >= 4 && (t.status === 'DETECTED' || t.status === 'QUALIFIED')
+      ).length || 0
+      return acc + critical
+    }, 0)
+
+    const totalActions = sias.reduce((acc, sia) => acc + (sia._count?.actions || sia.actions?.length || 0), 0)
+    const completedActions = sias.reduce((acc, sia) => {
+      const completed = sia.actions?.filter(a => a.status === 'DONE').length || 0
+      return acc + completed
+    }, 0)
+    const inProgressActions = sias.reduce((acc, sia) => {
+      const inProgress = sia.actions?.filter(a => a.status === 'IN_PROGRESS').length || 0
+      return acc + inProgress
+    }, 0)
+
+    // Aggregate domain scores
+    const domainScores: Record<string, number> = {}
+    const domainTensions: Record<string, number> = {}
+
+    Object.keys(DOMAINS).forEach(domain => {
+      domainScores[domain] = 0
+      domainTensions[domain] = 0
+    })
+
+    sias.forEach(sia => {
+      if (sia.vigilanceScores?.domains) {
+        Object.entries(sia.vigilanceScores.domains).forEach(([domain, score]) => {
+          if (domain in domainScores) {
+            domainScores[domain] += score
+          }
+        })
+      }
+      sia.tensions?.forEach(t => {
+        t.impactedDomains?.forEach(domain => {
+          if (domain in domainTensions) {
+            domainTensions[domain]++
+          }
+        })
+      })
+    })
+
+    // Average domain scores
+    if (sias.length > 0) {
+      Object.keys(domainScores).forEach(domain => {
+        domainScores[domain] /= sias.length
+      })
+    }
+
+    // Circle scores
+    const circleScores = { 1: 0, 2: 0, 3: 0 }
+    const circleTensions = { 1: 0, 2: 0, 3: 0 }
+
+    Object.entries(DOMAINS).forEach(([key, domain]) => {
+      const circle = domain.circle as 1 | 2 | 3
+      circleScores[circle] += domainScores[key] || 0
+      circleTensions[circle] += domainTensions[key] || 0
+    })
+
+    // Average circle scores
+    circleScores[1] /= 6 // 6 domains in circle 1
+    circleScores[2] /= 3 // 3 domains in circle 2
+    circleScores[3] /= 3 // 3 domains in circle 3
+
+    return {
+      totalSias: sias.length,
+      openTensions,
+      criticalTensions,
+      totalActions,
+      completedActions,
+      inProgressActions,
+      domainScores,
+      domainTensions,
+      circleScores,
+      circleTensions,
+      actionProgress: totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0,
+    }
+  }, [sias])
+
+  // Radar chart data
+  const radarData = useMemo(() => {
+    return Object.entries(DOMAINS).map(([key, domain]) => ({
+      domain: domain.label,
+      score: stats.domainScores[key] || 0,
+      fullMark: 5,
+    }))
+  }, [stats.domainScores])
+
+  // Pie chart data for tension status
+  const tensionStatusData = useMemo(() => {
+    const detected = sias.reduce((acc, sia) =>
+      acc + (sia.tensions?.filter(t => t.status === 'DETECTED').length || 0), 0)
+    const arbitrated = sias.reduce((acc, sia) =>
+      acc + (sia.tensions?.filter(t => t.status === 'ARBITRATED' || t.status === 'RESOLVED').length || 0), 0)
+    const dismissed = sias.reduce((acc, sia) =>
+      acc + (sia.tensions?.filter(t => t.status === 'DISMISSED').length || 0), 0)
+    const inProgress = sias.reduce((acc, sia) =>
+      acc + (sia.tensions?.filter(t => t.status === 'IN_PROGRESS' || t.status === 'QUALIFIED').length || 0), 0)
+
+    return [
+      { name: 'Détectées', value: detected, color: '#f59e0b' },
+      { name: 'En cours', value: inProgress, color: '#3b82f6' },
+      { name: 'Arbitrées', value: arbitrated, color: '#22c55e' },
+      { name: 'Rejetées', value: dismissed, color: '#6b7280' },
+    ].filter(d => d.value > 0)
+  }, [sias])
 
   if (loading) {
     return (
@@ -204,7 +396,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Mes systèmes d&apos;IA</h1>
           <p className="text-muted-foreground">
-            Gérez et analysez l&apos;éthique de vos systèmes
+            Vue d&apos;ensemble de l&apos;éthique de vos systèmes
           </p>
         </div>
         <Button asChild>
@@ -215,28 +407,8 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Rechercher un système..." className="pl-10" />
-        </div>
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          Filtres
-        </Button>
-        <div className="flex border rounded-md">
-          <Button variant="ghost" size="icon" className="rounded-r-none">
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-l-none">
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      {/* Main Stats */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -244,21 +416,32 @@ export default function DashboardPage() {
                 <LayoutGrid className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total SIA</p>
-                <p className="text-2xl font-bold">{sias.length}</p>
+                <p className="text-sm text-muted-foreground">Systèmes actifs</p>
+                <p className="text-2xl font-bold">{stats.totalSias}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={stats.criticalTensions > 0 ? 'border-red-200 bg-red-50' : ''}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100">
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
+              <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${
+                stats.criticalTensions > 0 ? 'bg-red-100' : 'bg-amber-100'
+              }`}>
+                <AlertTriangle className={`h-6 w-6 ${
+                  stats.criticalTensions > 0 ? 'text-red-600' : 'text-amber-600'
+                }`} />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Tensions ouvertes</p>
-                <p className="text-2xl font-bold">{openTensions}</p>
+                <p className="text-sm text-muted-foreground">Tensions à traiter</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold">{stats.openTensions}</p>
+                  {stats.criticalTensions > 0 && (
+                    <Badge variant="destructive" className="text-xs">
+                      {stats.criticalTensions} critiques
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -267,11 +450,11 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                <Clock className="h-6 w-6 text-blue-600" />
+                <Activity className="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Actions en cours</p>
-                <p className="text-2xl font-bold">{pendingActions}</p>
+                <p className="text-2xl font-bold">{stats.inProgressActions}</p>
               </div>
             </div>
           </CardContent>
@@ -280,15 +463,175 @@ export default function DashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+                <Target className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Actions terminées</p>
-                <p className="text-2xl font-bold">{completedActions}</p>
+                <p className="text-sm text-muted-foreground">Progression globale</p>
+                <p className="text-2xl font-bold">{stats.actionProgress}%</p>
               </div>
             </div>
+            <Progress value={stats.actionProgress} className="mt-3 h-1.5" />
           </CardContent>
         </Card>
+      </div>
+
+      {/* Analytics Section */}
+      {stats.totalSias > 0 && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Radar Chart - Ethical Profile */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Profil éthique global
+              </CardTitle>
+              <CardDescription>
+                Score moyen par domaine éthique sur l&apos;ensemble de vos systèmes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke="#e5e7eb" />
+                    <PolarAngleAxis
+                      dataKey="domain"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                    />
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[0, 5]}
+                      tick={{ fill: '#9ca3af', fontSize: 10 }}
+                    />
+                    <Radar
+                      name="Score"
+                      dataKey="score"
+                      stroke="#8b5cf6"
+                      fill="#8b5cf6"
+                      fillOpacity={0.3}
+                      strokeWidth={2}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-white rounded-lg shadow-lg border p-3">
+                              <p className="font-medium">{payload[0].payload.domain}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Score: {(payload[0].value as number).toFixed(1)}/5
+                              </p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Circle Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Par cercle éthique</CardTitle>
+              <CardDescription>
+                Les 3 cercles de vigilance ETICA
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CircleIndicator
+                circle={1}
+                score={stats.circleScores[1]}
+                tensionCount={stats.circleTensions[1]}
+              />
+              <CircleIndicator
+                circle={2}
+                score={stats.circleScores[2]}
+                tensionCount={stats.circleTensions[2]}
+              />
+              <CircleIndicator
+                circle={3}
+                score={stats.circleScores[3]}
+                tensionCount={stats.circleTensions[3]}
+              />
+
+              {/* Tension Status Pie Chart */}
+              {tensionStatusData.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-sm font-medium mb-2">Répartition des tensions</p>
+                  <div className="h-[150px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={tensionStatusData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={30}
+                          outerRadius={50}
+                        >
+                          {tensionStatusData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {tensionStatusData.map((entry) => (
+                      <div key={entry.name} className="flex items-center gap-1 text-xs">
+                        <div
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span>{entry.name}: {entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un système..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Button variant="outline">
+          <Filter className="h-4 w-4 mr-2" />
+          Filtres
+        </Button>
+        <div className="flex border rounded-md">
+          <Button
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="rounded-r-none"
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="icon"
+            className="rounded-l-none"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* SIA Grid */}
@@ -303,12 +646,25 @@ export default function DashboardPage() {
             </Button>
           </div>
         </Card>
-      ) : sias.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {sias.map((sia) => (
+      ) : filteredSias.length > 0 ? (
+        <div className={viewMode === 'grid' ? 'grid gap-6 md:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
+          {filteredSias.map((sia) => (
             <SiaCard key={sia.id} sia={sia} />
           ))}
         </div>
+      ) : sias.length > 0 ? (
+        <Card className="p-12 text-center">
+          <div className="mx-auto max-w-md">
+            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">Aucun résultat</h3>
+            <p className="mt-2 text-muted-foreground">
+              Aucun système ne correspond à votre recherche.
+            </p>
+            <Button variant="outline" onClick={() => setSearchQuery('')} className="mt-4">
+              Effacer la recherche
+            </Button>
+          </div>
+        </Card>
       ) : (
         <Card className="p-12 text-center">
           <div className="mx-auto max-w-md">

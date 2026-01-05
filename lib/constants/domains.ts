@@ -135,8 +135,8 @@ export const CIRCLE_1_DOMAINS = {
 // =============================================================================
 
 export const CIRCLE_2_DOMAINS = {
-  CONTROL: {
-    id: 'CONTROL',
+  MASTERY: {
+    id: 'MASTERY',
     label: 'Maîtrise',
     icon: 'Sliders',
     color: '#8B5CF6', // violet
@@ -243,8 +243,8 @@ export const CIRCLE_3_DOMAINS = {
       'Prise en compte des intérêts des tiers',
     ],
   },
-  BALANCE: {
-    id: 'BALANCE',
+  SOCIETAL_BALANCE: {
+    id: 'SOCIETAL_BALANCE',
     label: 'Équilibre sociétal',
     icon: 'Globe',
     color: '#14B8A6', // teal

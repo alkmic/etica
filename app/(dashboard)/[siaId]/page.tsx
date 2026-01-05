@@ -100,13 +100,13 @@ const domainIcons: Record<string, React.ReactNode> = {
   SECURITY: <Shield className="h-4 w-4" />,
   RECOURSE: <MessageSquare className="h-4 w-4" />,
   // Cercle 2 : Organisation
-  CONTROL: <Sparkles className="h-4 w-4" />,
+  MASTERY: <Sparkles className="h-4 w-4" />,
   RESPONSIBILITY: <ClipboardCheck className="h-4 w-4" />,
   SOVEREIGNTY: <Map className="h-4 w-4" />,
   // Cercle 3 : Société
   SUSTAINABILITY: <Leaf className="h-4 w-4" />,
   LOYALTY: <CheckCircle2 className="h-4 w-4" />,
-  BALANCE: <TrendingUp className="h-4 w-4" />,
+  SOCIETAL_BALANCE: <TrendingUp className="h-4 w-4" />,
 }
 
 // Severity is now 1-5 in schema

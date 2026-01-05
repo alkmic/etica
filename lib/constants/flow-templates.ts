@@ -943,7 +943,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         target: 'local-db',
         label: 'Requête contexte',
         dataTypes: ['CONTEXT'],
-        domains: ['CONTROL'],
+        domains: ['MASTERY'],
       },
       {
         id: 'e-llm-mod',
@@ -952,7 +952,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         targetHandle: 'input-0',
         label: 'Réponse brute',
         dataTypes: ['PREDICTION'],
-        domains: ['TRANSPARENCY', 'CONTROL'],
+        domains: ['TRANSPARENCY', 'MASTERY'],
       },
       {
         id: 'e-db-mod',
@@ -1053,7 +1053,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         target: 'edge',
         label: 'Données brutes',
         dataTypes: ['SENSOR_DATA', 'TELEMETRY'],
-        domains: ['CONTROL'],
+        domains: ['MASTERY'],
       },
       {
         id: 'e-edge-cloud',
@@ -1087,7 +1087,7 @@ export const FLOW_TEMPLATES: FlowTemplate[] = [
         target: 'intervention',
         label: 'Décision humaine',
         dataTypes: ['DECISION'],
-        domains: ['RESPONSIBILITY', 'BALANCE'],
+        domains: ['RESPONSIBILITY', 'SOCIETAL_BALANCE'],
       },
     ],
   },

@@ -913,7 +913,7 @@ const DETECTION_RULES: DetectionRule[] = [
         .map(e => e.id)
     },
     confidence: 'MEDIUM',
-    impactedDomains: ['SOVEREIGNTY', 'CONTROL'],
+    impactedDomains: ['SOVEREIGNTY', 'MASTERY'],
     suggestedActions: ['VENDOR_ASSESSMENT', 'DATA_LOCALIZATION'],
   },
 
@@ -933,7 +933,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'DECISION'),
     confidence: 'MEDIUM',
-    impactedDomains: ['CONTROL', 'TRANSPARENCY'],
+    impactedDomains: ['MASTERY', 'TRANSPARENCY'],
     suggestedActions: ['TECHNICAL_DOCUMENTATION', 'COMPETENCY_PLAN', 'TRAINING'],
   },
 
@@ -955,7 +955,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (sia, nodes, edges) => getEdgesForNodeTypes(nodes, edges, 'DECISION', 'ACTION'),
     confidence: 'LOW',
-    impactedDomains: ['RESPONSIBILITY', 'CONTROL'],
+    impactedDomains: ['RESPONSIBILITY', 'MASTERY'],
     suggestedActions: ['GOVERNANCE_RACI', 'ESCALATION_CHAIN', 'EXECUTIVE_COMMITMENT'],
   },
 
@@ -977,7 +977,7 @@ const DETECTION_RULES: DetectionRule[] = [
     },
     getRelatedEdges: (_sia, _nodes, edges) => edges.map(e => e.id),
     confidence: 'MEDIUM',
-    impactedDomains: ['BALANCE', 'EQUITY'],
+    impactedDomains: ['SOCIETAL_BALANCE', 'EQUITY'],
     suggestedActions: ['SYSTEMIC_IMPACT_ASSESSMENT', 'EMPLOYMENT_TRANSITION', 'SECTOR_COORDINATION'],
   },
 

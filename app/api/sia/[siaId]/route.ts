@@ -3,8 +3,60 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { DOMAIN_IDS } from '@/lib/constants/domains'
 
 export const dynamic = 'force-dynamic'
+
+// Calculate vigilance scores based on tensions and actions
+function calculateVigilanceScoresSimple(
+  tensions: Array<{ impactedDomains: string[]; severity: number; status: string }>,
+  actions: Array<{ status: string; tensionId: string | null }>
+) {
+  const domains: Record<string, number> = {}
+
+  // Initialize all domains with base score
+  for (const domainId of DOMAIN_IDS) {
+    domains[domainId] = 0
+  }
+
+  // Calculate exposure based on tensions
+  for (const tension of tensions) {
+    if (tension.status === 'DISMISSED') continue
+
+    for (const domain of tension.impactedDomains) {
+      if (domain in domains) {
+        // Add severity contribution (normalized to 0-1)
+        const severityContrib = (tension.severity || 3) / 5
+        domains[domain] += severityContrib * 0.5
+      }
+    }
+  }
+
+  // Reduce exposure based on resolved tensions and completed actions
+  const resolvedTensions = tensions.filter(t =>
+    t.status === 'RESOLVED' || t.status === 'ARBITRATED'
+  )
+  const completedActions = actions.filter(a => a.status === 'DONE')
+
+  for (const tension of resolvedTensions) {
+    for (const domain of tension.impactedDomains) {
+      if (domain in domains) {
+        domains[domain] = Math.max(0, domains[domain] - 0.2)
+      }
+    }
+  }
+
+  // Normalize scores to 0-5 scale
+  for (const domainId of Object.keys(domains)) {
+    domains[domainId] = Math.min(5, Math.max(0, domains[domainId] * 5))
+  }
+
+  // Calculate global score
+  const values = Object.values(domains)
+  const global = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0
+
+  return { global, domains }
+}
 
 const updateSiaSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -79,7 +131,24 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(sia)
+    // Calculate vigilance scores dynamically
+    const tensionsForScoring = sia.tensions.map(t => ({
+      impactedDomains: t.impactedDomains,
+      severity: t.severity,
+      status: t.status,
+    }))
+    const actionsForScoring = sia.actions.map(a => ({
+      status: a.status,
+      tensionId: a.tensionId,
+    }))
+
+    const calculatedScores = calculateVigilanceScoresSimple(tensionsForScoring, actionsForScoring)
+
+    // Return SIA with calculated scores
+    return NextResponse.json({
+      ...sia,
+      vigilanceScores: calculatedScores,
+    })
   } catch (error) {
     console.error('Error fetching SIA:', error)
     return NextResponse.json(

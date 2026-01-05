@@ -110,13 +110,13 @@ const PROFILE_WEIGHTS: Record<DomainId, Record<string, number>> = {
   SECURITY: { irreversibility: 0.5, scalability: 0.5 },
   RECOURSE: { irreversibility: 0.4, agentivity: 0.3, opacity: 0.3 },
   // Cercle 2: Organisation
-  CONTROL: { opacity: 0.5, asymmetry: 0.3, agentivity: 0.2 },
+  MASTERY: { opacity: 0.5, asymmetry: 0.3, agentivity: 0.2 },
   RESPONSIBILITY: { opacity: 0.5, irreversibility: 0.3, scalability: 0.2 },
   SOVEREIGNTY: { asymmetry: 0.5, scalability: 0.3, opacity: 0.2 },
   // Cercle 3: Société
   SUSTAINABILITY: { scalability: 0.8, irreversibility: 0.2 },
   LOYALTY: { asymmetry: 0.5, agentivity: 0.3, opacity: 0.2 },
-  BALANCE: { scalability: 0.6, agentivity: 0.2, irreversibility: 0.2 },
+  SOCIETAL_BALANCE: { scalability: 0.6, agentivity: 0.2, irreversibility: 0.2 },
 }
 
 /**

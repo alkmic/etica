@@ -67,8 +67,8 @@ export async function GET(
 
 const updateActionSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  description: z.string().optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED']).optional(),
+  description: z.string().nullable().optional(),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'CANCELLED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
   category: z
     .enum([
@@ -79,6 +79,8 @@ const updateActionSchema = z.object({
       'TECHNICAL',
       'ORGANIZATIONAL',
       'DESIGN',
+      'CONTRACTUAL',
+      'DOCUMENTATION',
       'AUDIT',
     ])
     .optional(),
@@ -120,11 +122,35 @@ export async function PUT(
     const body = await request.json()
     const validatedData = updateActionSchema.parse(body)
 
-    // Handle date conversion
-    const updateData: Record<string, unknown> = { ...validatedData }
+    // Handle date conversion and field mapping
+    const updateData: Record<string, unknown> = {}
+
+    if (validatedData.title !== undefined) {
+      updateData.title = validatedData.title
+    }
+    if (validatedData.description !== undefined) {
+      updateData.description = validatedData.description
+    }
+    if (validatedData.status !== undefined) {
+      updateData.status = validatedData.status
+      // Set completedAt when status changes to DONE
+      if (validatedData.status === 'DONE') {
+        updateData.completedAt = new Date()
+      } else {
+        updateData.completedAt = null
+      }
+    }
+    if (validatedData.priority !== undefined) {
+      updateData.priority = validatedData.priority
+    }
+    if (validatedData.category !== undefined) {
+      updateData.category = validatedData.category
+    }
     if (validatedData.dueDate !== undefined) {
       updateData.dueDate = validatedData.dueDate ? new Date(validatedData.dueDate) : null
     }
+    // Note: assignee is stored as a string in the description for now
+    // since assigneeId requires a valid User ID
 
     const action = await db.action.update({
       where: {
