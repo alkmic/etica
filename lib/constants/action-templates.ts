@@ -409,7 +409,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Créer une documentation technique complète pour assurer la maîtrise.',
     category: 'ORGANIZATIONAL',
     effort: 'LARGE',
-    impactDomains: ['CONTROL', 'RESPONSIBILITY'],
+    impactDomains: ['MASTERY', 'RESPONSIBILITY'],
     checklist: [
       'Documenter l\'architecture du système',
       'Décrire les flux de données',
@@ -424,7 +424,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'S\'assurer que les équipes ont les compétences pour maîtriser le système.',
     category: 'ORGANIZATIONAL',
     effort: 'LARGE',
-    impactDomains: ['CONTROL', 'RESPONSIBILITY'],
+    impactDomains: ['MASTERY', 'RESPONSIBILITY'],
     checklist: [
       'Identifier les compétences nécessaires',
       'Évaluer les gaps actuels',
@@ -439,7 +439,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Analyser et réduire les risques liés aux fournisseurs externes.',
     category: 'AUDIT',
     effort: 'MEDIUM',
-    impactDomains: ['SOVEREIGNTY', 'CONTROL'],
+    impactDomains: ['SOVEREIGNTY', 'MASTERY'],
     checklist: [
       'Lister tous les fournisseurs IA/données',
       'Évaluer le niveau de dépendance',
@@ -519,7 +519,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Réduire la consommation de ressources du système IA.',
     category: 'TECHNICAL',
     effort: 'LARGE',
-    impactDomains: ['SUSTAINABILITY', 'CONTROL'],
+    impactDomains: ['SUSTAINABILITY', 'MASTERY'],
     checklist: [
       'Évaluer les modèles légers alternatives',
       'Optimiser les hyperparamètres',
@@ -564,7 +564,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Analyser les effets du système au-delà des utilisateurs directs.',
     category: 'AUDIT',
     effort: 'LARGE',
-    impactDomains: ['BALANCE', 'EQUITY'],
+    impactDomains: ['SOCIETAL_BALANCE', 'EQUITY'],
     checklist: [
       'Identifier les effets de réseau',
       'Évaluer l\'impact sur la concurrence',
@@ -579,7 +579,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Accompagner les impacts du système sur l\'emploi.',
     category: 'ORGANIZATIONAL',
     effort: 'HUGE',
-    impactDomains: ['BALANCE', 'RESPONSIBILITY'],
+    impactDomains: ['SOCIETAL_BALANCE', 'RESPONSIBILITY'],
     checklist: [
       'Évaluer les postes impactés',
       'Prévoir des plans de reconversion',
@@ -594,7 +594,7 @@ export const ACTION_TEMPLATES: Record<string, ActionTemplate> = {
     description: 'Participer à l\'établissement de standards éthiques sectoriels.',
     category: 'ORGANIZATIONAL',
     effort: 'MEDIUM',
-    impactDomains: ['BALANCE', 'LOYALTY'],
+    impactDomains: ['SOCIETAL_BALANCE', 'LOYALTY'],
     checklist: [
       'Identifier les initiatives sectorielles',
       'Participer aux groupes de travail',
