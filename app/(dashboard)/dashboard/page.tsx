@@ -19,6 +19,7 @@ import {
   Users,
   Building2,
   Globe,
+  Flame,
 } from 'lucide-react'
 import {
   RadarChart,
@@ -27,7 +28,7 @@ import {
   PolarRadiusAxis,
   Radar,
   ResponsiveContainer,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   PieChart,
   Pie,
   Cell,
@@ -37,6 +38,10 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { AlertBanner, AlertBannerList } from '@/components/ui/alert-banner'
+import { TooltipMetric, InfoTooltip } from '@/components/ui/tooltip-metric'
+import { ViewToggle, useViewMode, type ViewMode } from '@/components/ui/view-toggle'
+import { METRIC_DEFINITIONS } from '@/lib/constants/metric-definitions'
 import { getVigilanceLabel } from '@/lib/utils'
 import { SIA_DOMAINS, SIA_STATUSES } from '@/lib/constants'
 import { DOMAINS, CIRCLE_NAMES, CIRCLE_COLORS } from '@/lib/constants/domains'
@@ -225,7 +230,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useViewMode('grid', 'dashboard-view-mode')
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function fetchSias() {
@@ -378,6 +384,70 @@ export default function DashboardPage() {
     ].filter(d => d.value > 0)
   }, [sias])
 
+  // Generate alerts based on stats
+  const alerts = useMemo(() => {
+    const alertList: Array<{
+      id: string
+      variant: 'critical' | 'warning' | 'info' | 'success'
+      title: string
+      description: string
+      count?: number
+      href?: string
+    }> = []
+
+    // Critical tensions alert
+    if (stats.criticalTensions > 0) {
+      alertList.push({
+        id: 'critical-tensions',
+        variant: 'critical',
+        title: 'Tensions critiques nécessitant une attention immédiate',
+        description: `${stats.criticalTensions} tension${stats.criticalTensions > 1 ? 's' : ''} avec une sévérité élevée nécessite${stats.criticalTensions > 1 ? 'nt' : ''} un arbitrage urgent.`,
+        count: stats.criticalTensions,
+      })
+    }
+
+    // Many open tensions warning
+    if (stats.openTensions > 10) {
+      alertList.push({
+        id: 'many-tensions',
+        variant: 'warning',
+        title: 'Nombreuses tensions en attente',
+        description: `${stats.openTensions} tensions sont en attente de traitement. Priorisez les plus critiques.`,
+        count: stats.openTensions,
+      })
+    }
+
+    // Low action progress warning
+    if (stats.totalActions > 5 && stats.actionProgress < 30) {
+      alertList.push({
+        id: 'low-progress',
+        variant: 'warning',
+        title: 'Progression des actions insuffisante',
+        description: `Seulement ${stats.actionProgress}% des actions sont complétées. Accélérez la mise en œuvre.`,
+      })
+    }
+
+    // Good progress info
+    if (stats.actionProgress >= 80 && stats.totalActions > 0) {
+      alertList.push({
+        id: 'good-progress',
+        variant: 'success',
+        title: 'Excellente progression',
+        description: `${stats.actionProgress}% des actions sont complétées. Continuez ainsi !`,
+      })
+    }
+
+    return alertList.filter(alert => !dismissedAlerts.has(alert.id))
+  }, [stats, dismissedAlerts])
+
+  const handleDismissAlert = (alertId: string) => {
+    setDismissedAlerts(prev => {
+      const newSet = new Set(prev)
+      newSet.add(alertId)
+      return newSet
+    })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -407,6 +477,24 @@ export default function DashboardPage() {
         </Button>
       </div>
 
+      {/* Alerts Section */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((alert) => (
+            <AlertBanner
+              key={alert.id}
+              variant={alert.variant}
+              title={alert.title}
+              description={alert.description}
+              count={alert.count}
+              dismissible
+              onDismiss={() => handleDismissAlert(alert.id)}
+              size="sm"
+            />
+          ))}
+        </div>
+      )}
+
       {/* Main Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -416,24 +504,43 @@ export default function DashboardPage() {
                 <LayoutGrid className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Systèmes actifs</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground">Systèmes actifs</p>
+                  <InfoTooltip
+                    content="Nombre total de systèmes d'IA enregistrés et suivis dans votre portefeuille."
+                  />
+                </div>
                 <p className="text-2xl font-bold">{stats.totalSias}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className={stats.criticalTensions > 0 ? 'border-red-200 bg-red-50' : ''}>
+        <Card className={stats.criticalTensions > 0 ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20' : ''}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${
-                stats.criticalTensions > 0 ? 'bg-red-100' : 'bg-amber-100'
+                stats.criticalTensions > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30'
               }`}>
-                <AlertTriangle className={`h-6 w-6 ${
-                  stats.criticalTensions > 0 ? 'text-red-600' : 'text-amber-600'
-                }`} />
+                {stats.criticalTensions > 0 ? (
+                  <Flame className="h-6 w-6 text-red-600 dark:text-red-400" />
+                ) : (
+                  <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                )}
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Tensions à traiter</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground">Tensions à traiter</p>
+                  <InfoTooltip
+                    content={
+                      <div className="space-y-1">
+                        <p>{METRIC_DEFINITIONS.tensionCount.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Les tensions critiques (sévérité 4-5) nécessitent une action immédiate.
+                        </p>
+                      </div>
+                    }
+                  />
+                </div>
                 <div className="flex items-baseline gap-2">
                   <p className="text-2xl font-bold">{stats.openTensions}</p>
                   {stats.criticalTensions > 0 && (
@@ -449,11 +556,16 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                <Activity className="h-6 w-6 text-blue-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <Activity className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Actions en cours</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground">Actions en cours</p>
+                  <InfoTooltip
+                    content="Actions correctives actuellement en cours de mise en œuvre pour traiter les tensions éthiques."
+                  />
+                </div>
                 <p className="text-2xl font-bold">{stats.inProgressActions}</p>
               </div>
             </div>
@@ -462,11 +574,23 @@ export default function DashboardPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                <Target className="h-6 w-6 text-green-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
+                <Target className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Progression globale</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground">Progression globale</p>
+                  <InfoTooltip
+                    content={
+                      <div className="space-y-1">
+                        <p>{METRIC_DEFINITIONS.progressRate.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {METRIC_DEFINITIONS.progressRate.calculation}
+                        </p>
+                      </div>
+                    }
+                  />
+                </div>
                 <p className="text-2xl font-bold">{stats.actionProgress}%</p>
               </div>
             </div>
@@ -511,11 +635,11 @@ export default function DashboardPage() {
                       fillOpacity={0.3}
                       strokeWidth={2}
                     />
-                    <Tooltip
+                    <RechartsTooltip
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           return (
-                            <div className="bg-white rounded-lg shadow-lg border p-3">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border p-3">
                               <p className="font-medium">{payload[0].payload.domain}</p>
                               <p className="text-sm text-muted-foreground">
                                 Score: {(payload[0].value as number).toFixed(1)}/5
@@ -577,7 +701,7 @@ export default function DashboardPage() {
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <RechartsTooltip />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -614,24 +738,15 @@ export default function DashboardPage() {
           <Filter className="h-4 w-4 mr-2" />
           Filtres
         </Button>
-        <div className="flex border rounded-md">
-          <Button
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="rounded-r-none"
-            onClick={() => setViewMode('grid')}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="rounded-l-none"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
+        <ViewToggle
+          value={viewMode}
+          onChange={(mode) => setViewMode(mode)}
+          options={[
+            { id: 'grid', label: 'Grille', icon: LayoutGrid, description: 'Afficher en cartes' },
+            { id: 'list', label: 'Liste', icon: List, description: 'Afficher en liste' },
+          ]}
+          showTooltips
+        />
       </div>
 
       {/* SIA Grid */}
